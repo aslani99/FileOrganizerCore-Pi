@@ -5,6 +5,9 @@
   const status = document.getElementById('status'), details = document.getElementById('details'), button = document.getElementById('payButton');
   const T = window.FOP_I18N.text;
   button.textContent = T.pay;
+  document.getElementById('summary-label').textContent = T.summary;
+  document.getElementById('checkout-heading').textContent = T.heading;
+  document.getElementById('browser-note').textContent = T.browserNote;
   document.getElementById('diagnostics-title').textContent = T.diagnostics;
   document.title = 'FileOrganizerPro — ' + T.pay;
   function closePage(key) {
@@ -31,7 +34,24 @@
   trace(cfg?.PI_SANDBOX === true ? 'SDK_MODE_DESKTOP_SANDBOX' : 'SDK_MODE_PI_BROWSER');
   let verificationTimer, verificationToken = token, verificationWaiting = false;
   let busy = false, terminal = false, paymentInFlight = false, session, accessToken, recoveryPromise, incompleteSeen = false, incompletePayment;
-  const show = (text, error = false) => { status.textContent = text; status.className = error ? 'error' : ''; };
+  const show = (text, error = false) => {
+    status.textContent = text;
+    status.className = error ? 'error' : '';
+    // Presentation only: never use visual state to authorize or retry a payment.
+    if (document.body) document.body.dataset.state = error ? 'error'
+      : text === T.success ? 'success'
+      : text === T.closed || text === T.cancelled ? 'closed'
+      : text === T.ready ? 'ready'
+      : text === T.unfinished || text === T.syncPending || text === T.follow ? 'waiting' : 'checking';
+  };
+  function renderSession(data) {
+    const amount = Number(data.amountPi);
+    if (!['pro', 'max'].includes(data.plan) || !Number.isFinite(amount) || amount <= 0) return;
+    document.getElementById('summary-label').textContent = T.summary + ' · ' + T[data.plan];
+    document.getElementById('plan-label').textContent = T.amountLabel;
+    document.getElementById('plan-amount').textContent = window.FOP_I18N.number(amount);
+    details.classList.remove('hidden');
+  }
   async function request(name, body) {
     trace('API_REQUEST_' + name.split('?')[0]);
     let response;
@@ -131,6 +151,7 @@
     try {
       incompleteSeen = false; incompletePayment = null; accessToken = null;
       session = await loadSession();
+      renderSession(session);
       if (session.status === 'completed') { finish(session); return; }
       if (!['pending','approved'].includes(session.status)) { terminal = true; closePage(session.status === 'cancelled' ? 'cancelled' : 'closed'); return; }
       if (!window.Pi) throw new Error('Open this link in Pi Browser.');
@@ -193,9 +214,9 @@
       if (!token || token.length > 512) throw Object.assign(new Error('invalid_token'), {code:'invalid_token'});
       if (!cfg?.SUPABASE_URL || !cfg.SUPABASE_ANON_KEY) throw new Error('Checkout configuration is missing.');
       session = await loadSession();
+      renderSession(session);
       if (session.status === 'completed') { finish(session); return; }
       if (!['pending','approved'].includes(session.status)) { terminal = true; closePage(session.status === 'cancelled' ? 'cancelled' : 'closed'); return; }
-      details.textContent = (T[session.plan] || session.plan) + ' · ' + window.FOP_I18N.number(Number(session.amountPi)) + ' Pi';
       trace('SESSION_READY');
       if (session.hasLinkedPayment || session.status === 'approved') { waitForVerification(undefined, true); return; }
       show(T.ready); button.classList.remove('hidden');

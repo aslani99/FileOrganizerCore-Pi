@@ -9,7 +9,7 @@ async function setup(options={}){
  let current={status:'approved',hasLinkedPayment:true,amountPi:1,plan:'pro',...options.session};
  let broken=false;
  const texts={unfinished:'WAIT; DO NOT PAY AGAIN',checking:'CHECKING',success:'SUCCESS',syncPending:'SYNC',network:'NETWORK',pay:'PAY',ready:'READY'};
- const context={URLSearchParams,AbortSignal,Date,console,location:{search:'?token=current'},document:{getElementById:el},
+ const context={URLSearchParams,AbortSignal,Date,console,location:{search:'?token=current'},document:{getElementById:el,body:{dataset:{}}},
  setTimeout:(fn)=>{timers.set(++timerId,fn);return timerId;},clearTimeout:id=>timers.delete(id),
  fetch:async(url,init)=>{requests.push({url,init});if(broken)throw new Error('offline');return {ok:true,json:async()=>url.includes('pi-complete')?{awaitingConfirmation:true,recoverySessionToken:'original'}:current};}
  };
@@ -17,7 +17,7 @@ async function setup(options={}){
  context.Pi=context.window.Pi={init:async()=>{},authenticate:async(scopes,cb)=>{if(options.incomplete)await cb({identifier:'old'});return {accessToken:'access'};},createPayment:async()=>{created++;}};
  vm.runInNewContext(code,context);
  const flush=async()=>{for(let n=0;n<8;n++)await new Promise(r=>setImmediate(r));};await flush();
- return {elements,requests,timers,events,get created(){return created},set(v){current=v},offline(v){broken=v},async click(){await el('payButton').click();await flush()},async tick(){const [id,fn]=timers.entries().next().value;timers.delete(id);await fn();await flush()}};
+ return {body:context.document.body,elements,requests,timers,events,get created(){return created},set(v){current=v},offline(v){broken=v},async click(){await el('payButton').click();await flush()},async tick(){const [id,fn]=timers.entries().next().value;timers.delete(id);await fn();await flush()}};
 }
 test('linked approval waits, polls, and never creates another payment',async()=>{
  const f=await setup();assert.equal(f.elements.get('payButton').textContent,'CHECKING');assert.equal(f.timers.size,1);
@@ -39,4 +39,17 @@ test('nineteen languages retain RTL configuration and use nonempty pending messa
  const ctx={window:{},location:{search:'?lang='+lang},navigator:{language:lang},document:{documentElement:{}},URLSearchParams,Intl};vm.runInNewContext(code,ctx);
  assert.ok(ctx.window.FOP_I18N.text.unfinished.length>20);assert.equal(ctx.document.documentElement.dir,['fa','ar','ur'].includes(lang)?'rtl':'ltr');
  }
+});
+
+test('presentation follows confirmed success, waiting and network errors',async()=>{
+ const f=await setup();assert.equal(f.body.dataset.state,'waiting');
+ f.offline(true);await f.tick();assert.equal(f.body.dataset.state,'error');
+ f.offline(false);f.set({status:'completed',subscriptionPendingSync:false});await f.tick();assert.equal(f.body.dataset.state,'success');
+});
+test('all presentation labels are localized for all nineteen languages',async()=>{
+ const code=await readFile(new URL('../web/checkout-i18n.js',import.meta.url),'utf8');
+ const ctx={window:{},location:{search:'?lang=fa'},navigator:{language:'en'},document:{documentElement:{}},URLSearchParams,Intl};vm.runInNewContext(code,ctx);
+ assert.equal(Object.keys(ctx.window.FOP_CHECKOUT_TEXT).length,19);
+ for(const labels of Object.values(ctx.window.FOP_CHECKOUT_TEXT)) for(const key of ['summary','heading','amountLabel','browserNote'])assert.ok(labels[key]?.length>0);
+ assert.equal(ctx.document.documentElement.dir,'rtl');
 });

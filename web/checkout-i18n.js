@@ -324,6 +324,127 @@ window.FOP_CHECKOUT_TEXT = {
   }
 };
 
+// Presentation copy; payment-state translations remain the source of truth.
+const checkoutLabels = {
+  "en": [
+    "Your subscription",
+    "Complete your purchase",
+    "Amount to pay",
+    "Continue in Pi Browser."
+  ],
+  "fa": [
+    "اشتراک شما",
+    "تکمیل خرید اشتراک",
+    "مبلغ قابل پرداخت",
+    "پرداخت را در مرورگر Pi ادامه دهید."
+  ],
+  "ar": [
+    "اشتراكك",
+    "إتمام شراء الاشتراك",
+    "المبلغ المستحق",
+    "تابع الدفع في متصفح Pi."
+  ],
+  "ur": [
+    "آپ کی رکنیت",
+    "خریداری مکمل کریں",
+    "قابل ادائیگی رقم",
+    "Pi Browser میں ادائیگی جاری رکھیں۔"
+  ],
+  "tr": [
+    "Aboneliğiniz",
+    "Satın almayı tamamlayın",
+    "Ödenecek tutar",
+    "Ödemeye Pi Browser’da devam edin."
+  ],
+  "ru": [
+    "Ваша подписка",
+    "Завершение покупки",
+    "Сумма к оплате",
+    "Продолжите оплату в Pi Browser."
+  ],
+  "zh-hans": [
+    "您的订阅",
+    "完成购买",
+    "应付金额",
+    "请在 Pi Browser 中继续付款。"
+  ],
+  "zh-hant": [
+    "您的訂閱",
+    "完成購買",
+    "應付金額",
+    "請在 Pi Browser 中繼續付款。"
+  ],
+  "id": [
+    "Langganan Anda",
+    "Selesaikan pembelian",
+    "Jumlah pembayaran",
+    "Lanjutkan pembayaran di Pi Browser."
+  ],
+  "vi": [
+    "Gói đăng ký của bạn",
+    "Hoàn tất mua hàng",
+    "Số tiền thanh toán",
+    "Tiếp tục thanh toán trong Pi Browser."
+  ],
+  "es": [
+    "Tu suscripción",
+    "Completa tu compra",
+    "Importe a pagar",
+    "Continúa el pago en Pi Browser."
+  ],
+  "fr": [
+    "Votre abonnement",
+    "Finalisez votre achat",
+    "Montant à payer",
+    "Poursuivez le paiement dans Pi Browser."
+  ],
+  "de": [
+    "Dein Abonnement",
+    "Kauf abschließen",
+    "Zahlungsbetrag",
+    "Setze die Zahlung im Pi Browser fort."
+  ],
+  "hi": [
+    "आपकी सदस्यता",
+    "खरीदारी पूरी करें",
+    "भुगतान की राशि",
+    "Pi Browser में भुगतान जारी रखें।"
+  ],
+  "ja": [
+    "ご利用のサブスクリプション",
+    "購入手続きを完了",
+    "お支払い金額",
+    "Pi Browser で支払いを続けてください。"
+  ],
+  "ko": [
+    "내 구독",
+    "구매 완료하기",
+    "결제 금액",
+    "Pi Browser에서 결제를 계속하세요."
+  ],
+  "it": [
+    "Il tuo abbonamento",
+    "Completa il tuo acquisto",
+    "Importo da pagare",
+    "Continua il pagamento in Pi Browser."
+  ],
+  "pt": [
+    "Sua assinatura",
+    "Conclua sua compra",
+    "Valor a pagar",
+    "Continue o pagamento no Pi Browser."
+  ],
+  "az": [
+    "Abunəliyiniz",
+    "Alışı tamamlayın",
+    "Ödəniləcək məbləğ",
+    "Ödənişi Pi Browser-də davam etdirin."
+  ]
+};
+for (const [language, labels] of Object.entries(checkoutLabels)) {
+  Object.assign(window.FOP_CHECKOUT_TEXT[language], {summary:labels[0],heading:labels[1],amountLabel:labels[2],browserNote:labels[3]});
+}
+
 (() => {
   const requested = (new URLSearchParams(location.search).get('lang') || navigator.language || 'en').toLowerCase();
   const code = requested.startsWith('zh') ? (/hant|tw|hk/.test(requested) ? 'zh-hant' : 'zh-hans') : requested.split('-')[0];
