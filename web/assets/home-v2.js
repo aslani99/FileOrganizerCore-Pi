@@ -52,6 +52,9 @@
     $('language').value = choice;
     $('language').options[0].textContent = T.browserLanguage;
     $('language').setAttribute('aria-label',T.languageLabel);
+    $('language').title=T.languageLabel+' — '+(choice==='auto'?T.browserLanguage:locale.names[choice]);
+    $('piShortcut').setAttribute('aria-label',T.piLogin);$('piShortcut').title=T.piLogin;
+    $('theme').title=T.themeLabel;
     document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
     $('theme').setAttribute('aria-label',T.themeLabel);
     $('closeScanner').setAttribute('aria-label',T.closeLabel); $('closePrivacy').setAttribute('aria-label',T.closeLabel);

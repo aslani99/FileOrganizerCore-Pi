@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#12141c"><meta name="referrer" content="no-referrer">
 <meta name="description" content="FileOrganizerPro — Windows file organization and Pi checkout."><title>FileOrganizerPro</title>
-<link rel="stylesheet" href="assets/home-v2.css?v=20261104-languages1">
+<link rel="stylesheet" href="assets/home-v2.css?v=20261104-toolbar1">
 <script>
 // Keep previously issued root payment links working on this same checkout host.
 (() => {
@@ -16,12 +16,12 @@
   location.replace(target.href);
 })();
 </script>
-<script defer src="config.js?v=20261022"></script><script defer src="assets/vendor/jsQR-1.4.0.js"></script><script defer src="assets/home-policy.js?v=20261104-languages1"></script><script defer src="assets/home-locale.js?v=20261104-languages1"></script><script defer src="assets/home-i18n.js?v=20261104-languages1"></script><script defer src="assets/home-v2.js?v=20261104-languages1"></script>
+<script defer src="config.js?v=20261022"></script><script defer src="assets/home-runtime.js?v=20261104-toolbar1"></script>
 </head>
 <body>
 <a class="skip" href="#main" data-t="skip">رفتن به محتوا</a>
 <div class="shell">
-<header><a class="brand" href="#top" aria-label="FileOrganizerPro"><span class="brand-icon" data-icon="folder"></span><b>FileOrganizer<span>Pro</span></b></a><nav aria-label="Navigation"><a href="#features" data-t="features">قابلیت‌ها</a><a href="#pricing" data-t="plans">پلن‌ها</a><a href="#help" data-t="help">راهنما</a></nav><div class="tools"><select id="language" aria-label="Language"><option value="fa">فارسی</option><option value="en">English</option></select><button id="theme" class="icon-button" aria-label="Theme" data-icon="sun"></button><button class="button small" data-scan data-t="scan">اسکن QR</button></div></header>
+<header><a class="brand" href="#top" aria-label="FileOrganizerPro"><span class="brand-icon" data-icon="folder"></span><b>FileOrganizer<span>Pro</span></b></a><nav aria-label="Navigation"><a href="#features" data-t="features">قابلیت‌ها</a><a href="#pricing" data-t="plans">پلن‌ها</a><a href="#help" data-t="help">راهنما</a></nav><div class="tools"><label class="language-control icon-button"><span data-icon="globe" aria-hidden="true"></span><select id="language" aria-label="Language"><option value="fa">فارسی</option><option value="en">English</option></select></label><a id="piShortcut" class="icon-button pi-shortcut" href="#pi" aria-label="Connect to Pi"><span aria-hidden="true">π</span></a><button id="theme" class="icon-button" aria-label="Theme" data-icon="sun"></button><button class="button small" data-scan data-t="scan">اسکن QR</button></div></header>
 <main id="main">
 <section class="hero" id="top"><div class="hero-copy"><div class="eyebrow"><span class="live-dot"></span><span data-t="eyebrow">فایل‌های مرتب. تمرکز بیشتر.</span></div><h1 data-t="hero">به شلوغی فایل‌ها<br>نظم بده.</h1><p class="lead" data-t="intro">عکس‌ها، ویدیوها و اسنادت را با قوانین دلخواه مرتب کن. پوشه‌ها را پایش کن و نتیجهٔ هر عملیات را ببین.</p><div class="actions"><a class="button primary" href="#download"><span data-icon="download"></span><span data-t="getApp">دریافت نسخهٔ ویندوز</span></a><button class="button" data-scan><span data-icon="scan"></span><span data-t="scanPay">اسکن و ادامهٔ پرداخت</span></button></div><p class="fine" data-t="local">سازماندهی فایل‌ها روی کامپیوتر شما انجام می‌شود.</p></div>
 <div class="app-preview" aria-label="Interface illustration"><div class="preview-bar"><span data-icon="folder"></span><span data-t="workspace">فضای مرتب شما</span><span class="preview-tag" data-t="illustration">نمای مفهومی</span></div><div class="preview-flow"><div class="source-folder"><span data-icon="folder"></span><span data-t="source">پوشهٔ مبدأ</span><i></i><i></i><i></i></div><span class="flow-mark" data-icon="arrow"></span><div class="file-stack"><div><span class="tile violet" data-icon="image"></span><span data-t="photos">عکس‌ها</span><span class="mini-dot"></span></div><div><span class="tile amber" data-icon="video"></span><span data-t="videos">ویدیوها</span><span class="mini-dot"></span></div><div><span class="tile teal" data-icon="document"></span><span data-t="documents">اسناد</span><span class="mini-dot"></span></div><div><span class="tile blue" data-icon="audio"></span><span data-t="audio">صداها</span><span class="mini-dot"></span></div></div></div><div class="preview-bottom"><span data-icon="check"></span><span data-t="rules">بر اساس نوع فایل و قوانین شما</span></div></div></section>

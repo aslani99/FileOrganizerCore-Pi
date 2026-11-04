@@ -15,6 +15,9 @@ const locale=require('../web/assets/home-locale.js'),root=path.resolve(__dirname
   assert.equal(await page.locator('html').getAttribute('lang'),lang);
   assert.equal(await page.locator('html').getAttribute('dir'),locale.rtl.includes(lang)?'rtl':'ltr');
   assert.equal(await page.locator('#language').inputValue(),'auto');
+  assert.equal(await page.locator('#language').evaluate(e=>getComputedStyle(e).opacity),'0');
+  assert.ok(await page.locator('#piShortcut').getAttribute('aria-label'));
+  assert.ok(await page.locator('.language-control').isVisible());
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),lang+' overflow');
   assert.ok(await page.evaluate(()=>[...document.querySelectorAll('[data-t]')].every(e=>e.textContent===FOP_HOME_TEXT[document.documentElement.lang][e.dataset.t])));
   await page.locator('#language').selectOption('de');await page.reload();

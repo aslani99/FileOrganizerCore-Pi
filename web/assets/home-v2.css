@@ -8,3 +8,10 @@ h1{white-space:pre-line}button,summary,a,p,h1,h2,h3{overflow-wrap:anywhere}.plan
 /* Keep native locale names usable without widening the mobile header. */
 #language{max-width:150px;min-width:0;}
 @media(max-width:600px){#language{max-width:110px;}.tools{min-width:0;}}
+
+/* Native language chooser retains keyboard and mobile accessibility behind a globe. */
+.language-control{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
+.language-control #language{position:absolute;inset:0;width:100%;height:100%;max-width:none;min-width:0;opacity:0;cursor:pointer;margin:0;padding:0;}
+.language-control:focus-within{outline:2px solid var(--focus);outline-offset:4px;}
+.pi-shortcut{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:24px;font-weight:700;}
+#pi{scroll-margin-top:24px;}
