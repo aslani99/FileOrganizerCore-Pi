@@ -33,7 +33,7 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
  await page.emulateMedia({colorScheme:theme});
  await page.waitForFunction(t=>document.body.dataset.theme===t,theme);
  const positions=await page.evaluate(()=>['theme','language','piShortcut'].map(id=>document.getElementById(id).getBoundingClientRect().x));
- assert.ok(language==='fa'?positions[0]>positions[1]&&positions[1]>positions[2]:positions[0]<positions[1]&&positions[1]<positions[2]);
+ assert.ok(positions[0]<positions[1]&&positions[1]<positions[2]);
 
  await page.locator('#theme').click();assert.notEqual(await page.locator('body').getAttribute('data-theme'),theme);
  await page.locator('#theme').click();
@@ -46,6 +46,10 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
  assert.equal(await page.locator('#scanner').evaluate(e=>e.open),true);
 
  await page.waitForFunction(()=>document.getElementById('camera').srcObject?.active);
+ await page.evaluate(()=>window.__tracks=document.getElementById('camera').srcObject.getTracks());
+ await page.locator('#stopCamera').click();assert.ok(await page.evaluate(()=>__tracks.every(t=>t.readyState==='ended')));
+ assert.equal(await page.locator('#stopCamera').textContent(),await page.evaluate(()=>FOP_HOME_TEXT[document.documentElement.lang].cameraStart));
+ await page.locator('#stopCamera').click();await page.waitForFunction(()=>document.getElementById('camera').srcObject?.active);
  await page.evaluate(()=>window.__tracks=document.getElementById('camera').srcObject.getTracks());
  await page.locator('#closeScanner').click();assert.ok(await page.evaluate(()=>__tracks.every(t=>t.readyState==='ended')));
  await page.locator('.scan-banner [data-scan]').click();

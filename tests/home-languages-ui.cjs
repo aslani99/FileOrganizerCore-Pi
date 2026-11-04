@@ -18,7 +18,8 @@ const locale=require('../web/assets/home-locale.js'),root=path.resolve(__dirname
   assert.equal(await page.locator('#language').evaluate(e=>getComputedStyle(e).opacity),'0');
   assert.ok(await page.locator('#piShortcut').getAttribute('aria-label'));
   assert.ok(await page.locator('.language-control').isVisible());
-  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),lang+' overflow');
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),lang+' overflow '+JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('header,header .brand,header .tools,header .tools>*')].map(e=>[e.id||e.className,e.getBoundingClientRect().width,getComputedStyle(e).minWidth,e.textContent.slice(0,30)]))));
+  assert.ok(await page.evaluate(()=>{const a=document.querySelector('header .brand').getBoundingClientRect(),b=document.querySelector('header .tools').getBoundingClientRect();return a.right<=b.left&&Math.abs((a.top+a.height/2)-(b.top+b.height/2))<2;}),lang+' header wraps or overlaps');
   assert.ok(await page.evaluate(()=>[...document.querySelectorAll('[data-t]')].every(e=>e.textContent===FOP_HOME_TEXT[document.documentElement.lang][e.dataset.t])));
   await page.locator('#language').selectOption('de');await page.reload();
   assert.equal(await page.locator('html').getAttribute('lang'),'de');

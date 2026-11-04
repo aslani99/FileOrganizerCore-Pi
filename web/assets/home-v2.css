@@ -19,3 +19,29 @@ h1{white-space:pre-line}button,summary,a,p,h1,h2,h3{overflow-wrap:anywhere}.plan
 /* Logical trailing order: Pi at the outside edge, language, then theme inward. */
 header .tools{flex-wrap:wrap;justify-content:flex-end;}
 @media(max-width:700px){header .tools{width:100%;margin-inline-start:0;}header .pi-shortcut{max-width:calc(100% - 110px);white-space:normal;}}
+
+/* Header geometry stays LTR; localized controls retain their own text direction. */
+header{direction:ltr;flex-wrap:nowrap;gap:14px;}
+header .brand{direction:ltr;flex-shrink:0;}
+header .tools{direction:ltr;flex-wrap:nowrap;width:auto;margin-inline-start:auto;gap:8px;flex-shrink:0;}
+header #theme{order:1;}header .language-control{order:2;}header .pi-shortcut{order:3;color:var(--brand);white-space:nowrap;max-width:none;}
+header .tools>[data-scan]{order:0;}
+[dir=rtl] header nav,[dir=rtl] header .pi-shortcut,[dir=rtl] header select{direction:rtl;}
+@media(max-width:700px){
+ header{gap:8px;}header .brand{font-size:14px;gap:5px;}header .brand-icon{padding:5px;}
+ header .brand-icon svg{width:19px;height:19px;}header .tools{gap:5px;}
+ header .icon-button{width:34px;min-width:34px;min-height:38px;padding:6px;}
+ header .pi-shortcut{font-size:12px;padding:7px 8px;min-height:38px;}
+}
+@media(max-width:460px){
+ header .brand{font-size:12px;gap:4px;letter-spacing:-.5px;}header .brand-icon{display:inline-flex;padding:4px;border-radius:7px;}
+ header .brand-icon svg{width:16px;height:16px;}header .tools{gap:4px;}
+ header .pi-shortcut{font-size:11px;padding:7px 5px;}header .icon-button{width:30px;min-width:30px;padding:4px;}
+}
+@media(max-width:460px){
+ header{margin-inline:-10px;gap:5px;}
+ header .brand{font-size:11px;letter-spacing:-.65px;gap:3px;}
+ header .brand-icon{padding:3px;}header .brand-icon svg{width:14px;height:14px;}
+ header .tools{gap:3px;}header .icon-button{width:28px;min-width:28px;}
+ header .pi-shortcut{font-size:11px;padding-inline:4px;}
+}

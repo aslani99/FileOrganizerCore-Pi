@@ -12844,6 +12844,7 @@ window.FOP_HOME_TEXT = {
     $('switchCamera').setAttribute('aria-label',T.switchLabel); document.querySelector('nav').setAttribute('aria-label',T.navLabel);
     document.title = 'FileOrganizerPro — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
+    $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
     renderPi(); renderSelected();
   }
   function renderSelected() { $('selectedPlan').textContent = selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
@@ -12911,7 +12912,7 @@ window.FOP_HOME_TEXT = {
     epoch++;clearTimeout(scanTimer);scanTimer=null;
     if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
-    requestingCamera=false;$('stopCamera').hidden=true;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
+    requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
   }
   function openScanner(plan='') {
     selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('cameraHint');
@@ -12921,7 +12922,7 @@ window.FOP_HOME_TEXT = {
   $('closeScanner').onclick=()=>{stopCamera();$('scanner').close();};
   $('scanner').addEventListener('cancel',stopCamera);
   $('scanner').addEventListener('close',()=>{stopCamera();clearResult();$('paymentLink').value='';$('qrImage').value='';document.body.classList.remove('modal-open');});
-  $('stopCamera').onclick=()=>{stopCamera();scanStatus('cameraStopped');};
+  $('stopCamera').onclick=()=>{if(stream||requestingCamera){stopCamera();scanStatus('cameraStopped');}else startCamera();};
   document.addEventListener('visibilitychange',()=>{if(document.hidden){const active=!!stream||requestingCamera;stopCamera();if(active)scanStatus('cameraStopped');}});
   window.addEventListener('pagehide',stopCamera);
   function acceptLink(raw) {
@@ -12948,13 +12949,13 @@ window.FOP_HOME_TEXT = {
     stopCamera();clearResult();const ticket=epoch;
     if(!isSecureContext||!navigator.mediaDevices?.getUserMedia){scanStatus('cameraUnsupported',true);return;}
     if(!window.jsQR||!ctx){scanStatus('readerMissing',true);return;}
-    requestingCamera=true;scanStatus('cameraRequest');
+    requestingCamera=true;$('stopCamera').textContent=T.cameraStop;scanStatus('cameraRequest');
     try {
       const received=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}}});
       if(ticket!==epoch||!$('scanner').open||document.hidden){received.getTracks().forEach(t=>t.stop());return;}
       stream=received;$('camera').srcObject=stream;await $('camera').play();
       if(ticket!==epoch)return;
-      $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('switchCamera').hidden=false;
+      $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStop;$('switchCamera').hidden=false;
       const track=stream.getVideoTracks()[0];$('torch').hidden=!track.getCapabilities?.().torch;scanStatus('cameraScanning');
       const tick=()=>{
         if(ticket!==epoch||!stream||!$('scanner').open)return;
