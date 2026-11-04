@@ -1,128 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta name="referrer" content="no-referrer">
-  <script>
-    // Preserve older root checkout links without sending capabilities to external hosts.
-    const checkoutToken = new URLSearchParams(location.search).get('token');
-    if (checkoutToken) location.replace('checkout.html?token=' + encodeURIComponent(checkoutToken));
-  </script>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta name="theme-color" content="#111827" />
-<title>File Organizer Pro — سازماندهی هوشمند فایل‌ها</title>
-<meta name="description" content="سازماندهی هوشمند فایل‌های ویندوز با کپی امن، تشخیص تکراری و سازماندهی پیوسته." />
-<link rel="stylesheet" href="assets/style.css" />
-<script src="https://sdk.minepi.com/pi-sdk.js"></script>
-<script src="config.js?v=20261022"></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#12141c"><meta name="referrer" content="no-referrer">
+<meta name="description" content="FileOrganizerPro — Windows file organization and Pi checkout."><title>FileOrganizerPro</title>
+<link rel="stylesheet" href="assets/home-v2.css?v=20261104-languages1">
+<script>
+// Keep previously issued root payment links working on this same checkout host.
+(() => {
+  const query = new URLSearchParams(location.search), token = query.get('token');
+  if (!token) return;
+  const target = new URL('checkout.html', location.href);
+  target.searchParams.set('token', token);
+  const lang = query.get('lang');
+  if (lang) target.searchParams.set('lang', lang);
+  location.replace(target.href);
+})();
+</script>
+<script defer src="config.js?v=20261022"></script><script defer src="assets/vendor/jsQR-1.4.0.js"></script><script defer src="assets/home-policy.js?v=20261104-languages1"></script><script defer src="assets/home-locale.js?v=20261104-languages1"></script><script defer src="assets/home-i18n.js?v=20261104-languages1"></script><script defer src="assets/home-v2.js?v=20261104-languages1"></script>
 </head>
 <body>
-<div class="page-shell">
-  <header class="site-header">
-    <a class="brand" href="#" aria-label="File Organizer Pro">
-      <span class="brand-mark">F</span>
-      <span>
-        <strong>File Organizer Pro</strong>
-        <small>Smart file organization</small>
-      </span>
-    </a>
-    <nav class="site-nav" aria-label="ناوبری">
-      <a href="#features">قابلیت‌ها</a>
-      <a href="#pricing">پلن‌ها</a>
-      <a href="#pi">Pi</a>
-      <a href="#download">دانلود</a>
-    </nav>
-    <button id="piAuthButton" class="btn btn-outline btn-small" type="button">ورود با Pi</button>
-  </header>
-
-  <main>
-    <section class="hero">
-      <div class="eyebrow">WINDOWS • PI TESTNET READY</div>
-      <h1>فایل‌های شلوغ ویندوز را <span>هوشمندانه</span> مرتب کنید.</h1>
-      <p>File Organizer Pro فایل‌های شما را بر اساس نوع و قوانین انتخابی سازماندهی می‌کند؛ با تمرکز روی سرعت، امنیت و حفظ فایل‌های اصلی.</p>
-      <div class="btn-row">
-        <a id="heroDownload" href="#download" class="btn btn-primary">دانلود برای ویندوز</a>
-        <a href="#pricing" class="btn btn-outline">مشاهده پلن‌ها</a>
-      </div>
-      <div id="piStatus" class="pi-status" role="status" aria-live="polite">در حال آماده‌سازی اتصال Pi...</div>
-    </section>
-
-    <section id="features" class="section">
-      <div class="section-heading">
-        <span class="section-kicker">CORE FEATURES</span>
-        <h2>همه‌چیز برای یک سازماندهی تمیز</h2>
-        <p>یک ابزار دسکتاپ واقعی، نه فقط یک فایل‌مرتب‌کن ساده.</p>
-      </div>
-      <div class="feature-grid">
-        <article class="card feature-card"><div class="icon">🗂️</div><h3>دسته‌بندی هوشمند</h3><p>عکس، ویدیو، صدا، سند، آرشیو، کد و انواع دیگر در ساختار منظم قرار می‌گیرند.</p></article>
-        <article class="card feature-card"><div class="icon">🧬</div><h3>تشخیص تکراری</h3><p>فایل‌های تکراری بر اساس محتوای واقعی شناسایی می‌شوند، نه فقط نام فایل.</p></article>
-        <article class="card feature-card"><div class="icon">👁️</div><h3>سازماندهی پیوسته</h3><p>پوشه را پایش کنید تا فایل‌های جدید نیز به‌صورت خودکار پردازش شوند.</p></article>
-        <article class="card feature-card"><div class="icon">🛡️</div><h3>حفاظت از مبدأ</h3><p>در حالت کپی، فایل اصلی دست‌نخورده می‌ماند و نسخه سازمان‌یافته ساخته می‌شود.</p></article>
-        <article class="card feature-card"><div class="icon">📊</div><h3>گزارش و آمار</h3><p>نتیجه عملیات، حجم پردازش‌شده، تکراری‌ها و خطاها را شفاف مشاهده کنید.</p></article>
-        <article class="card feature-card"><div class="icon">🌐</div><h3>چندزبانه</h3><p>رابط کاربری چندزبانه با پشتیبانی کامل از زبان‌های راست‌به‌چپ.</p></article>
-      </div>
-    </section>
-
-    <section id="pi" class="section pi-section">
-      <div class="pi-panel">
-        <div>
-          <span class="section-kicker">PI NETWORK</span>
-          <h2>اتصال آماده برای Pi Browser</h2>
-          <p id="piDescription">این نسخه برای محیط Testnet/Sandbox آماده شده است. ورود با Pi مستقیماً با Pi SDK انجام می‌شود.</p>
-        </div>
-        <div class="pi-actions">
-          <div id="piUser" class="pi-user hidden"></div>
-          <button id="piAuthButtonSecondary" class="btn btn-primary" type="button">ورود امن با Pi</button>
-        </div>
-      </div>
-    </section>
-
-    <section id="piDebug" class="section pi-debug-section">
-      <div class="section-heading">
-        <span class="section-kicker">PI DIAGNOSTICS</span>
-        <h2>گزارش عیب‌یابی اتصال Pi</h2>
-        <p>برای پیدا کردن علت خطای ورود، رویدادهای Pi SDK اینجا ثبت می‌شوند. توکن دسترسی یا اطلاعات حساس نمایش داده نمی‌شود.</p>
-      </div>
-      <div class="pi-debug-card card">
-        <div class="pi-debug-toolbar">
-          <span id="piDebugState" class="pi-debug-state">در حال جمع‌آوری اطلاعات...</span>
-          <div class="pi-debug-actions">
-            <button id="piDebugCopy" class="btn btn-outline btn-small" type="button">کپی گزارش</button>
-            <button id="piDebugClear" class="btn btn-outline btn-small" type="button">پاک کردن</button>
-          </div>
-        </div>
-        <div id="piDebugMeta" class="pi-debug-meta"></div>
-        <pre id="piDebugLog" class="pi-debug-log" aria-live="polite"></pre>
-      </div>
-    </section>
-
-    <section id="pricing" class="section">
-      <div class="section-heading">
-        <span class="section-kicker">PLANS</span>
-        <h2>پلن مناسب خودتان را انتخاب کنید</h2>
-        <p>قیمت‌ها از همان منبع مرکزی پلن‌های File Organizer Pro خوانده می‌شوند.</p>
-      </div>
-      <div class="plan-grid" id="pricingGrid">
-        <div class="card loading-card">در حال دریافت پلن‌ها...</div>
-      </div>
-    </section>
-
-    <section id="download" class="section download-section">
-      <div class="download-card">
-        <span class="section-kicker">GET STARTED</span>
-        <h2>مرتب‌سازی را شروع کنید</h2>
-        <p>نسخه دسکتاپ File Organizer Pro برای Windows 10/11 طراحی شده است. نسخه رایگان را امتحان کنید و هر زمان خواستید ارتقا دهید.</p>
-        <a id="downloadButton" href="#" class="btn btn-primary">دانلود File Organizer Pro</a>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div>© <span id="year"></span> File Organizer Pro</div>
-    <div><a href="privacy.html">حریم خصوصی</a><a href="terms.html">قوانین استفاده</a></div>
-    <div class="footer-note">Pi integration: Testnet / Sandbox</div>
-  </footer>
+<a class="skip" href="#main" data-t="skip">رفتن به محتوا</a>
+<div class="shell">
+<header><a class="brand" href="#top" aria-label="FileOrganizerPro"><span class="brand-icon" data-icon="folder"></span><b>FileOrganizer<span>Pro</span></b></a><nav aria-label="Navigation"><a href="#features" data-t="features">قابلیت‌ها</a><a href="#pricing" data-t="plans">پلن‌ها</a><a href="#help" data-t="help">راهنما</a></nav><div class="tools"><select id="language" aria-label="Language"><option value="fa">فارسی</option><option value="en">English</option></select><button id="theme" class="icon-button" aria-label="Theme" data-icon="sun"></button><button class="button small" data-scan data-t="scan">اسکن QR</button></div></header>
+<main id="main">
+<section class="hero" id="top"><div class="hero-copy"><div class="eyebrow"><span class="live-dot"></span><span data-t="eyebrow">فایل‌های مرتب. تمرکز بیشتر.</span></div><h1 data-t="hero">به شلوغی فایل‌ها<br>نظم بده.</h1><p class="lead" data-t="intro">عکس‌ها، ویدیوها و اسنادت را با قوانین دلخواه مرتب کن. پوشه‌ها را پایش کن و نتیجهٔ هر عملیات را ببین.</p><div class="actions"><a class="button primary" href="#download"><span data-icon="download"></span><span data-t="getApp">دریافت نسخهٔ ویندوز</span></a><button class="button" data-scan><span data-icon="scan"></span><span data-t="scanPay">اسکن و ادامهٔ پرداخت</span></button></div><p class="fine" data-t="local">سازماندهی فایل‌ها روی کامپیوتر شما انجام می‌شود.</p></div>
+<div class="app-preview" aria-label="Interface illustration"><div class="preview-bar"><span data-icon="folder"></span><span data-t="workspace">فضای مرتب شما</span><span class="preview-tag" data-t="illustration">نمای مفهومی</span></div><div class="preview-flow"><div class="source-folder"><span data-icon="folder"></span><span data-t="source">پوشهٔ مبدأ</span><i></i><i></i><i></i></div><span class="flow-mark" data-icon="arrow"></span><div class="file-stack"><div><span class="tile violet" data-icon="image"></span><span data-t="photos">عکس‌ها</span><span class="mini-dot"></span></div><div><span class="tile amber" data-icon="video"></span><span data-t="videos">ویدیوها</span><span class="mini-dot"></span></div><div><span class="tile teal" data-icon="document"></span><span data-t="documents">اسناد</span><span class="mini-dot"></span></div><div><span class="tile blue" data-icon="audio"></span><span data-t="audio">صداها</span><span class="mini-dot"></span></div></div></div><div class="preview-bottom"><span data-icon="check"></span><span data-t="rules">بر اساس نوع فایل و قوانین شما</span></div></div></section>
+<section class="scan-banner"><span class="scan-symbol" data-icon="scan"></span><div><h2 data-t="haveQR">کد پرداخت روی کامپیوترت آماده است؟</h2><p data-t="qrIntro">همین‌جا اسکن کن یا تصویر QR را انتخاب کن؛ سپس پرداخت را در Pi Browser ادامه بده.</p></div><button class="button primary" data-scan data-t="openScanner">باز کردن اسکنر</button></section>
+<section id="features" class="section"><div class="section-head"><p class="eyebrow" data-t="built">برای فایل‌های روزمرهٔ شما</p><h2 data-t="featuresTitle">کنترل بیشتر، کار تکراری کمتر.</h2></div><div class="features">
+<article><span class="feature-icon" data-icon="layers"></span><h3 data-t="categorize">دسته‌بندی با قوانین دلخواه</h3><p data-t="categorizeBody">نوع فایل، تاریخ و فیلترهای انتخابی، ساختار پوشه‌ها را مشخص می‌کنند.</p></article>
+<article><span class="feature-icon" data-icon="copy"></span><h3 data-t="duplicates">مدیریت فایل‌های تکراری</h3><p data-t="duplicatesBody">فایل‌های تکراری و نتیجهٔ پردازش را در گزارش‌ها پیگیری کنید.</p></article>
+<article><span class="feature-icon" data-icon="activity"></span><h3 data-t="monitor">پایش فایل‌های جدید</h3><p data-t="monitorBody">پس از فعال‌کردن پایش در اپ، فایل‌های جدید پوشه نیز پردازش می‌شوند.</p></article>
+<article><span class="feature-icon" data-icon="shield"></span><h3 data-t="copyMode">کپی یا انتقال، با انتخاب شما</h3><p data-t="copyBody">در حالت کپی، فایل مبدأ حفظ می‌شود. حالت انتقال را آگاهانه انتخاب کنید.</p></article>
+<article><span class="feature-icon" data-icon="chart"></span><h3 data-t="reports">گزارش قابل بررسی</h3><p data-t="reportsBody">موفق، تکراری، ردشده و خطادار؛ نتیجهٔ عملیات در دسترس شماست.</p></article>
+<article><span class="feature-icon" data-icon="globe"></span><h3 data-t="languages">متناسب با زبان شما</h3><p data-t="languagesBody">اپ دسکتاپ چندزبانه است و از چیدمان راست‌به‌چپ پشتیبانی می‌کند.</p></article></div></section>
+<section id="pricing" class="section"><div class="section-head split"><div><p class="eyebrow" data-t="yourPlan">انتخاب شما</p><h2 data-t="plansTitle">یک شروع ساده. فضای بیشتر برای رشد.</h2></div><button class="button small" id="reloadPlans"><span data-icon="refresh"></span><span data-t="refresh">به‌روزرسانی</span></button></div><p class="section-note" data-t="priceNote">قیمت و مدت از سرور دریافت می‌شوند. مبلغ نهایی Pi در لینک پرداخت اپ مشخص می‌شود.</p><div id="plansStatus" role="status" aria-live="polite"></div><div id="pricingGrid" class="plans"></div></section>
+<section class="pi-panel" id="pi"><span class="pi-mark">π</span><div><p class="eyebrow">PI NETWORK</p><h2 data-t="piTitle">از اپ تا کیف پول، یک مسیر مشخص.</h2><p data-t="piBody">در اپ ویندوز وارد حساب شوید و لینک پرداخت بسازید. QR را اینجا اسکن کنید؛ تأیید پرداخت در صفحهٔ اختصاصی انجام می‌شود.</p><p id="piStatus" role="status" aria-live="polite" data-t="piExplain">ورود Pi در این صفحه، جایگزین حساب ایمیلی اپ نیست.</p><p id="piUser" hidden></p></div><button id="piAuth" class="button" data-t="piLogin">اتصال به Pi</button></section>
+<section id="piDebug" class="section"><details class="diagnostic-panel"><summary data-t="diagnosticsTitle">گزارش عیب‌یابی اتصال Pi</summary><p class="fine" data-t="diagnosticsNote">فقط مراحل فنی ثبت می‌شوند؛ توکن، لینک پرداخت و اطلاعات حساب در گزارش قرار نمی‌گیرند.</p><div class="actions"><button id="piDebugCopy" class="button small" data-t="diagnosticsCopy">کپی گزارش</button><button id="piDebugClear" class="button small" data-t="diagnosticsClear">پاک‌کردن گزارش</button></div><p id="piDebugState" role="status"></p><pre id="piDebugLog" dir="ltr" tabindex="0"></pre></details></section>
+<section id="help" class="section help-grid"><div><p class="eyebrow" data-t="help">راهنما</p><h2 data-t="faqTitle">قبل از شروع</h2><p class="section-note" data-t="helpIntro">پاسخ‌های کوتاه برای مسیر نصب، اسکن و خرید.</p></div><div class="faq"><details><summary data-t="q1">از کجا پرداخت را شروع کنم؟</summary><p data-t="a1">در اپ ویندوز وارد حساب شوید، پلن و تخفیف را انتخاب کنید و لینک پرداخت بسازید. سپس QR را اینجا اسکن کنید یا لینک را وارد کنید. خرید به همان حساب اپ متصل می‌ماند.</p></details><details><summary data-t="q2">اگر دوربین باز نشد چه کنم؟</summary><p data-t="a2">مجوز دوربین مرورگر را بررسی کنید. می‌توانید تصویر QR را انتخاب کنید یا لینک پرداخت را دستی وارد کنید. اسکن مستقیم به HTTPS و پشتیبانی مرورگر نیاز دارد.</p></details><details><summary data-t="q3">آیا اسکن، پرداخت را انجام می‌دهد؟</summary><p data-t="a3">خیر. ابتدا لینک معتبر شناسایی می‌شود و با تأیید شما صفحهٔ پرداخت باز می‌شود. هیچ پرداختی صرفاً با اسکن انجام نمی‌شود.</p></details><details><summary data-t="q4">پرداخت من در انتظار تأیید است.</summary><p data-t="a4">دوباره پرداخت نکنید. همان لینک را باز کنید تا وضعیت بررسی شود. اگر مبلغ کسر شده ولی پلن فعال نشده، اطلاعات تراکنش را برای پیگیری نگه دارید.</p></details></div></section>
+<section id="download" class="download"><div><p class="eyebrow">FILEORGANIZERPRO / WINDOWS</p><h2 data-t="downloadTitle">پوشهٔ بعدی را مرتب‌تر شروع کن.</h2><p data-t="downloadBody">فایل نصب را دریافت کنید و حساب کاربری خود را داخل اپ بسازید.</p><p id="downloadStatus" role="status"></p></div><a id="downloadButton" class="button primary" hidden><span data-icon="download"></span><span data-t="download">دانلود نرم‌افزار</span></a></section>
+</main><footer><a class="brand" href="#top"><b>FileOrganizerPro</b></a><span>© <span id="year"></span></span><button id="privacy" class="text-button" data-t="privacy">حریم خصوصی این صفحه</button><a href="privacy.html" data-t="productPrivacy">حریم خصوصی محصول</a><a href="terms.html" data-t="terms">شرایط استفاده</a><a href="#help" data-t="help">راهنما</a></footer>
 </div>
-<script src="app.js"></script>
-</body>
-</html>
+<dialog id="scanner" aria-labelledby="scannerTitle"><div class="dialog-head"><div><p class="eyebrow" data-t="scanStep">از اپ به صفحهٔ پرداخت</p><h2 id="scannerTitle" data-t="scanTitle">اسکن کد پرداخت</h2></div><button class="icon-button" id="closeScanner" data-icon="close" aria-label="Close"></button></div><p class="muted" id="selectedPlan"></p><div class="viewfinder"><video id="camera" muted playsinline autoplay></video><div id="cameraPlaceholder"><span data-icon="scan"></span><p data-t="cameraHint">کد QR اپ را داخل کادر بگیرید.</p></div><div class="scan-corners" aria-hidden="true"></div></div><p id="scanStatus" role="status" aria-live="polite" data-t="scannerReady">دوربین را روشن کنید یا تصویر کد را انتخاب کنید.</p><div class="actions scanner-actions"><button id="startCamera" class="button primary" data-t="cameraStart">روشن‌کردن دوربین</button><button id="stopCamera" class="button" hidden data-t="cameraStop">توقف دوربین</button><button id="switchCamera" class="icon-button" hidden data-icon="refresh" aria-label="Switch camera"></button><button id="torch" class="button small" hidden data-t="torch">چراغ</button><label class="button upload-button"><span data-icon="image"></span><span data-t="imageSelect">انتخاب تصویر QR</span><input id="qrImage" type="file" accept="image/png,image/jpeg,image/webp"></label></div><details class="manual"><summary data-t="manual">لینک پرداخت را دارم</summary><label for="paymentLink" data-t="linkLabel">لینک ساخته‌شده در اپ</label><div class="link-row"><input id="paymentLink" type="url" dir="ltr" autocomplete="off" spellcheck="false" placeholder="https://…/checkout.html?token=…"><button id="checkLink" class="button" data-t="checkLink">بررسی لینک</button></div></details><div id="scanResult" class="scan-result" hidden><strong data-t="validLink">لینک پرداخت شناسایی شد</strong><p id="resultHost" dir="ltr"></p><p data-t="confirmInfo">در صفحهٔ بعد، پلن و مبلغ را قبل از تأیید بررسی کنید.</p><button id="openPayment" class="button primary" data-t="continue">ادامه به صفحهٔ پرداخت</button></div><p class="fine" data-t="scanPrivacy">تصویر دوربین و فایل QR برای اسکن به سرور ارسال نمی‌شوند.</p></dialog>
+<dialog id="privacyDialog" aria-labelledby="privacyTitle"><div class="dialog-head"><h2 id="privacyTitle" data-t="privacy">حریم خصوصی این صفحه</h2><button id="closePrivacy" class="icon-button" data-icon="close" aria-label="Close"></button></div><p data-t="privacyBody">اسکن QR داخل مرورگر انجام می‌شود. هنگام بستن اسکنر یا پنهان‌شدن صفحه، دوربین متوقف می‌شود. زبان و تم در همین مرورگر ذخیره می‌شوند. دریافت پلن‌ها به سرور اپ متصل می‌شود و اتصال اختیاری Pi از SDK پای استفاده می‌کند. لینک پرداخت فقط پس از انتخاب «ادامه» باز می‌شود؛ تصاویر برای اسکن آپلود نمی‌شوند. این توضیح مربوط به همین صفحه است.</p><button id="clearPrefs" class="button" data-t="clearPrefs">پاک‌کردن تنظیمات ذخیره‌شدهٔ این صفحه</button><p id="privacyStatus" role="status"></p></dialog>
+<noscript>برای دریافت پلن‌ها و اسکن QR، JavaScript مرورگر را فعال کنید. / Enable JavaScript to load plans and scan QR codes.</noscript>
+</body></html>
