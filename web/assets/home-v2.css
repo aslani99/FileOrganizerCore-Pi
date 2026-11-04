@@ -13,5 +13,9 @@ h1{white-space:pre-line}button,summary,a,p,h1,h2,h3{overflow-wrap:anywhere}.plan
 .language-control{position:relative;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
 .language-control #language{position:absolute;inset:0;width:100%;height:100%;max-width:none;min-width:0;opacity:0;cursor:pointer;margin:0;padding:0;}
 .language-control:focus-within{outline:2px solid var(--focus);outline-offset:4px;}
-.pi-shortcut{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:24px;font-weight:700;}
+.pi-shortcut{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font-size:14px;font-weight:600;white-space:nowrap;min-height:43px;padding:9px 14px;}
 #pi{scroll-margin-top:24px;}
+
+/* Logical trailing order: Pi at the outside edge, language, then theme inward. */
+header .tools{flex-wrap:wrap;justify-content:flex-end;}
+@media(max-width:700px){header .tools{width:100%;margin-inline-start:0;}header .pi-shortcut{max-width:calc(100% - 110px);white-space:normal;}}

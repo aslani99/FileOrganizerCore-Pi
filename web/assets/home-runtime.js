@@ -10436,7 +10436,7 @@ window.FOP_HOME_TEXT = {
     "piTitle": "از اپ تا کیف پول، یک مسیر مشخص.",
     "piBody": "در اپ ویندوز وارد حساب شوید و لینک پرداخت بسازید. QR را اینجا اسکن کنید؛ تأیید پرداخت در صفحهٔ اختصاصی انجام می‌شود.",
     "piExplain": "ورود Pi در این صفحه، جایگزین حساب ایمیلی اپ نیست.",
-    "piLogin": "اتصال به Pi",
+    "piLogin": "اتصال به پای",
     "faqTitle": "قبل از شروع",
     "helpIntro": "پاسخ‌های کوتاه برای مسیر نصب، اسکن و خرید.",
     "q1": "از کجا پرداخت را شروع کنم؟",
@@ -12803,8 +12803,8 @@ window.FOP_HOME_TEXT = {
   let language = locale.resolve(choice, browserLanguages());
   $('language').replaceChildren(...[['auto',''], ...Object.entries(locale.names)].map(([value,label]) => { const o=document.createElement('option');o.value=value;o.textContent=label;return o; }));
   let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false, sdkPromise;
-  let stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
-  let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'scannerReady', scannerError = false, piMessage = 'piExplain';
+  let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
+  let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'cameraHint', scannerError = false, piMessage = 'piExplain';
   const paths = {
     folder:'M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z M8 13l3 3 5-5',
     scan:'M9 3H3v6m12-6h6v6M3 15v6h6m12-6v6h-6 M8 8h3v3H8Zm5 0h3v3h-3Zm-5 5h3v3H8Zm5 0h3v3h-3Z',
@@ -12849,8 +12849,13 @@ window.FOP_HOME_TEXT = {
   function renderSelected() { $('selectedPlan').textContent = selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
   function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+piUsername : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
   function applyTheme(value) { document.body.dataset.theme = value; $('theme').setAttribute('aria-pressed',String(value === 'light')); }
-  applyTheme(readPref('fop-home-theme') || (matchMedia('(prefers-color-scheme:light)').matches?'light':'dark'));
-  $('theme').onclick = () => { const theme = document.body.dataset.theme === 'light'?'dark':'light'; applyTheme(theme);writePref('fop-home-theme',theme); };
+  const browserTheme = matchMedia('(prefers-color-scheme:dark)');
+  let manualTheme = ['light','dark'].includes(readPref('fop-home-theme')) ? readPref('fop-home-theme') : null;
+  const systemTheme = () => browserTheme.matches ? 'dark' : 'light';
+  applyTheme(manualTheme || systemTheme());
+  const followTheme = () => { if(!manualTheme)applyTheme(systemTheme()); };
+  if(browserTheme.addEventListener)browserTheme.addEventListener('change',followTheme);else browserTheme.addListener(followTheme);
+  $('theme').onclick = () => { manualTheme = document.body.dataset.theme === 'light'?'dark':'light'; applyTheme(manualTheme);writePref('fop-home-theme',manualTheme); };
   $('language').onchange = () => { choice = $('language').value;writePref('fop-home-language',choice);language=locale.resolve(choice,browserLanguages());applyLanguage(); };
   window.addEventListener('languagechange',()=>{if(choice==='auto'){language=locale.resolve(choice,browserLanguages());applyLanguage();}});
   $('year').textContent = new Date().getFullYear();
@@ -12906,18 +12911,18 @@ window.FOP_HOME_TEXT = {
     epoch++;clearTimeout(scanTimer);scanTimer=null;
     if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
-    $('startCamera').disabled=false;$('startCamera').hidden=false;$('stopCamera').hidden=true;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
+    requestingCamera=false;$('stopCamera').hidden=true;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
   }
   function openScanner(plan='') {
-    selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('scannerReady');
-    $('scanner').showModal();document.body.classList.add('modal-open');
+    selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('cameraHint');
+    $('scanner').showModal();document.body.classList.add('modal-open');startCamera();
   }
   document.querySelectorAll('[data-scan]').forEach(button=>button.onclick=()=>openScanner());
   $('closeScanner').onclick=()=>{stopCamera();$('scanner').close();};
   $('scanner').addEventListener('cancel',stopCamera);
   $('scanner').addEventListener('close',()=>{stopCamera();clearResult();$('paymentLink').value='';$('qrImage').value='';document.body.classList.remove('modal-open');});
   $('stopCamera').onclick=()=>{stopCamera();scanStatus('cameraStopped');};
-  document.addEventListener('visibilitychange',()=>{if(document.hidden){const active=!!stream||$('startCamera').disabled;stopCamera();if(active)scanStatus('cameraStopped');}});
+  document.addEventListener('visibilitychange',()=>{if(document.hidden){const active=!!stream||requestingCamera;stopCamera();if(active)scanStatus('cameraStopped');}});
   window.addEventListener('pagehide',stopCamera);
   function acceptLink(raw) {
     clearResult();const url=policy.checkoutLink(raw,location.href,cfg.CHECKOUT_URL);
@@ -12943,13 +12948,13 @@ window.FOP_HOME_TEXT = {
     stopCamera();clearResult();const ticket=epoch;
     if(!isSecureContext||!navigator.mediaDevices?.getUserMedia){scanStatus('cameraUnsupported',true);return;}
     if(!window.jsQR||!ctx){scanStatus('readerMissing',true);return;}
-    $('startCamera').disabled=true;scanStatus('cameraRequest');
+    requestingCamera=true;scanStatus('cameraRequest');
     try {
       const received=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}}});
       if(ticket!==epoch||!$('scanner').open||document.hidden){received.getTracks().forEach(t=>t.stop());return;}
       stream=received;$('camera').srcObject=stream;await $('camera').play();
       if(ticket!==epoch)return;
-      $('cameraPlaceholder').hidden=true;$('startCamera').hidden=true;$('stopCamera').hidden=false;$('switchCamera').hidden=false;
+      $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('switchCamera').hidden=false;
       const track=stream.getVideoTracks()[0];$('torch').hidden=!track.getCapabilities?.().torch;scanStatus('cameraScanning');
       const tick=()=>{
         if(ticket!==epoch||!stream||!$('scanner').open)return;
@@ -12958,9 +12963,8 @@ window.FOP_HOME_TEXT = {
         scanTimer=setTimeout(tick,250);
       };tick();
     }catch(error){if(ticket===epoch){stopCamera();scanStatus(['NotAllowedError','SecurityError'].includes(error.name)?'cameraDenied':'cameraMissing',true);}}
-    finally{if(ticket===epoch)$('startCamera').disabled=false;}
+    finally{if(ticket===epoch)requestingCamera=false;}
   }
-  $('startCamera').onclick=startCamera;
   $('switchCamera').onclick=()=>{facing=facing==='environment'?'user':'environment';startCamera();};
   $('torch').onclick=async()=>{try{const track=stream?.getVideoTracks()[0];if(!track)return;await track.applyConstraints({advanced:[{torch:!torchOn}]});torchOn=!torchOn;$('torch').setAttribute('aria-pressed',String(torchOn));}catch{scanStatus('torchFailed',true);}};
   $('qrImage').onchange=async()=>{
@@ -12999,7 +13003,7 @@ window.FOP_HOME_TEXT = {
   $('privacy').onclick=()=>{$('privacyDialog').showModal();document.body.classList.add('modal-open');};
   $('closePrivacy').onclick=()=>$('privacyDialog').close();
   $('privacyDialog').addEventListener('close',()=>document.body.classList.remove('modal-open'));
-  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());applyTheme(matchMedia('(prefers-color-scheme:light)').matches?'light':'dark');applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
+  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
   applyLanguage();loadPlans();
 })();
 

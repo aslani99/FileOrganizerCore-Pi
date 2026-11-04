@@ -28,13 +28,23 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
  assert.equal(await page.locator('#downloadButton').isVisible(),false);
  assert.equal(await page.locator('body').getAttribute('data-theme'),theme);
  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'viewport overflow');
+ const other=theme==='light'?'dark':'light';
+ await page.emulateMedia({colorScheme:other});await page.waitForFunction(t=>document.body.dataset.theme===t,other);
+ await page.emulateMedia({colorScheme:theme});
+ await page.waitForFunction(t=>document.body.dataset.theme===t,theme);
+ const positions=await page.evaluate(()=>['theme','language','piShortcut'].map(id=>document.getElementById(id).getBoundingClientRect().x));
+ assert.ok(language==='fa'?positions[0]>positions[1]&&positions[1]>positions[2]:positions[0]<positions[1]&&positions[1]<positions[2]);
+
  await page.locator('#theme').click();assert.notEqual(await page.locator('body').getAttribute('data-theme'),theme);
  await page.locator('#theme').click();
- // No camera requested before the explicit camera action.
+ await page.reload();await page.waitForSelector('.plan');
+ await page.emulateMedia({colorScheme:other});assert.equal(await page.locator('body').getAttribute('data-theme'),theme);
+ // Opening the scanner is the camera gesture; no separate start button.
+ assert.equal(await page.locator('#startCamera').count(),0);
+ assert.equal(await page.locator('#camera').evaluate(e=>e.srcObject),null);
  await page.locator('.scan-banner [data-scan]').click();
  assert.equal(await page.locator('#scanner').evaluate(e=>e.open),true);
- assert.equal(await page.locator('#camera').evaluate(e=>e.srcObject),null);
- await page.locator('#startCamera').click();
+
  await page.waitForFunction(()=>document.getElementById('camera').srcObject?.active);
  await page.evaluate(()=>window.__tracks=document.getElementById('camera').srcObject.getTracks());
  await page.locator('#closeScanner').click();assert.ok(await page.evaluate(()=>__tracks.every(t=>t.readyState==='ended')));
@@ -53,16 +63,16 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
  assert.equal(await page.locator('#scanResult').isVisible(),false);
  await page.keyboard.press('Escape');assert.equal(await page.locator('#scanner').evaluate(e=>e.open),false);
  if(width===390 && language==='fa' && theme==='dark'){
-  await page.locator('.scan-banner [data-scan]').click();
   await page.evaluate(()=>{window.__originalCamera=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('denied','NotAllowedError')};});
-  await page.locator('#startCamera').click();await page.waitForFunction(()=>document.getElementById('scanStatus').classList.contains('error'));
+  await page.locator('.scan-banner [data-scan]').click();await page.waitForFunction(()=>document.getElementById('scanStatus').classList.contains('error'));
+  await page.locator('#closeScanner').click();
   assert.equal(await page.locator('#camera').evaluate(e=>e.srcObject),null);
   await page.evaluate(async()=>{window.__lateStream=await __originalCamera({video:true});navigator.mediaDevices.getUserMedia=()=>new Promise(resolve=>window.__resolveCamera=resolve);});
-  await page.locator('#startCamera').click();await page.locator('#closeScanner').click();
+  await page.locator('.scan-banner [data-scan]').click();await page.locator('#closeScanner').click();
   await page.evaluate(()=>__resolveCamera(__lateStream));
   await page.waitForFunction(()=>__lateStream.getTracks().every(t=>t.readyState==='ended'));
   await page.evaluate(()=>navigator.mediaDevices.getUserMedia=__originalCamera);
-  await page.locator('.scan-banner [data-scan]').click();await page.locator('#startCamera').click();await page.waitForFunction(()=>document.getElementById('camera').srcObject?.active);
+  await page.locator('.scan-banner [data-scan]').click();await page.waitForFunction(()=>document.getElementById('camera').srcObject?.active);
   await page.evaluate(()=>{window.__hiddenTracks=document.getElementById('camera').srcObject.getTracks();Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'));});
   assert.ok(await page.evaluate(()=>__hiddenTracks.every(t=>t.readyState==='ended')));
   await page.evaluate(()=>{delete document.hidden;});await page.locator('#closeScanner').click();
