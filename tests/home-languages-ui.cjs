@@ -21,6 +21,17 @@ const locale=require('../web/assets/home-locale.js'),root=path.resolve(__dirname
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),lang+' overflow '+JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('header,header .brand,header .tools,header .tools>*')].map(e=>[e.id||e.className,e.getBoundingClientRect().width,getComputedStyle(e).minWidth,e.textContent.slice(0,30)]))));
   assert.ok(await page.evaluate(()=>{const a=document.querySelector('header .brand').getBoundingClientRect(),b=document.querySelector('header .tools').getBoundingClientRect();return a.right<=b.left&&Math.abs((a.top+a.height/2)-(b.top+b.height/2))<2;}),lang+' header wraps or overlaps');
   assert.ok(await page.evaluate(()=>[...document.querySelectorAll('[data-t]')].every(e=>e.textContent===FOP_HOME_TEXT[document.documentElement.lang][e.dataset.t])));
+  for(const width of [320,390,768,1280]){
+   await page.setViewportSize({width,height:850});
+   const boxes=await page.evaluate(()=>{const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right}};return {page:document.documentElement.scrollWidth,viewport:innerWidth,brand:rect(document.querySelector('header .brand')),tools:rect(document.querySelector('header .tools')),buttons:['theme','language','piShortcut'].map(id=>rect(id==='language'?document.querySelector('.language-control'):document.getElementById(id)))}});
+   assert.ok(boxes.page<=width,lang+' overflow at '+width);
+   assert.ok(boxes.brand.right<=boxes.tools.x,lang+' overlap at '+width);
+   assert.equal(boxes.buttons[0].w,boxes.buttons[1].w);
+   assert.equal(boxes.buttons[0].h,boxes.buttons[2].h);
+   assert.equal(boxes.buttons[0].w,boxes.buttons[0].h);
+   assert.ok(await page.locator('#piShortcut').evaluate(e=>e.scrollHeight<=e.clientHeight&&e.scrollWidth<=e.clientWidth),lang+' button text clipping '+width);
+   if(lang==='fa'&&theme==='dark'&&[320,390,1280].includes(width))await page.locator('header').screenshot({path:require('node:path').resolve(__dirname,'../header-'+width+'.png')});
+  }
   await page.locator('#language').selectOption('de');await page.reload();
   assert.equal(await page.locator('html').getAttribute('lang'),'de');
   await page.locator('#language').selectOption('auto');assert.equal(await page.locator('html').getAttribute('lang'),lang);
