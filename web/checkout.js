@@ -9,7 +9,7 @@
   document.getElementById('checkout-heading').textContent = T.heading;
   document.getElementById('browser-note').textContent = T.browserNote;
   document.getElementById('diagnostics-title').textContent = T.diagnostics;
-  document.title = 'FileOrganizerPro — ' + T.pay;
+  document.title = 'FileOrganizerCore — ' + T.pay;
   function closePage(key) {
     clearTimeout(verificationTimer);
     terminal = true; button.disabled = true; button.classList.add('hidden'); show(T[key]);
@@ -187,7 +187,7 @@
       show(T.checking);
       trace('CREATE_PAYMENT_CALLED');
       paymentInFlight = true;
-      await Pi.createPayment({amount, memo:'FileOrganizerPro ' + session.plan, metadata:{sessionToken:token}}, {
+      await Pi.createPayment({amount, memo:'FileOrganizerCore ' + session.plan, metadata:{sessionToken:token}}, {
         onReadyForServerApproval: id => callback('pi-approve',{sessionToken:token,paymentId:id,accessToken},() => show(T.follow)),
         onReadyForServerCompletion: (id,txId) => callback('pi-complete',{sessionToken:token,paymentId:id,txId,accessToken},finish),
         onCancel: async id => {

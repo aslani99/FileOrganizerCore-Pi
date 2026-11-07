@@ -59,7 +59,7 @@
     $('theme').setAttribute('aria-label',T.themeLabel);
     $('closeScanner').setAttribute('aria-label',T.closeLabel); $('closePrivacy').setAttribute('aria-label',T.closeLabel);
     $('switchCamera').setAttribute('aria-label',T.switchLabel); document.querySelector('nav').setAttribute('aria-label',T.navLabel);
-    document.title = 'FileOrganizerPro — ' + T.eyebrow;
+    document.title = 'FileOrganizerCore — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
     $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
     renderPi(); renderSelected();

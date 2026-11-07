@@ -5,5 +5,6 @@ window.FOP_CONFIG = Object.freeze({
   PI_SANDBOX: false,
   SUPABASE_URL: "https://mjkjmwgjtnuvnedvtgqo.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_ZAAeiRgkF8U2PcfcqvAbtQ_EGqjle5Y",
-  DOWNLOAD_URL: "https://github.com/aslani99/FileOrganizerPro-Pi/releases/download/v1.0.0-testnet.1/FileOrganizerPro-Setup.exe",
+  // Set to the real HTTPS release URL after publishing FileOrganizerCore-Setup.exe.
+  DOWNLOAD_URL: "",
 });
