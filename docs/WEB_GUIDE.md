@@ -186,3 +186,16 @@ Local verification: six Chromium tests with mocked Pi/Supabase: correct backend+
 References:
 https://github.com/pi-apps/pi-platform-docs/blob/master/SDK_reference.md
 https://github.com/pi-apps/pi-platform-docs/blob/master/developer_portal.md
+
+
+## Pi sign-in confirmation — 2026-11-08b
+The desktop QR fragment carries lang and theme (light/dark). Theme is applied before paint; a direct link without theme falls back to the browser preference. Browser capabilities are removed from the visible history after parsing. No desktop session token is returned to this page.
+
+Deploy the updated pi-auth handler BEFORE publishing this page: inspect responses must include server_now and expires_at. The countdown uses server time plus monotonic elapsed time. A timely approval gives the desktop a one-time two-minute confirmation window; no client may extend it. Failed approval responses are reconciled by inspecting the same capability. Accounts remain separate unless explicitly linked by their verified owner.
+
+The 19-localized-language page has a loading code card, larger purple Core wordmark, separate Pi identity card (textContent, never HTML), green success/red error status, and explicit light/dark styling. Asset query version: 20261109.
+
+Validation: node tests/pi-login-ui.cjs (Playwright; optional CHROME_PATH) covers 42 mocked browser cases, including opposite OS/app theme, skewed phone clock, safe username rendering, response loss and expiry. It does not replace a real Pi Browser test.
+
+### 2026-11-09 additions
+The red open-in-Pi-Browser notice is conditional: Pi Browser user-agent or a successful nativeFeaturesList response suppresses it. SDK script presence alone is not evidence of Pi Browser. This check only controls presentation, never identity authorization. Desktop countdown also uses the server deadline. All success/error status and identity labels stay localized.
