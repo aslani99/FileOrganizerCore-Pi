@@ -56,6 +56,11 @@
     // Keep the browser's rear choice when labels provide no better evidence.
     return best && (!current || cameraRank(best.label)>cameraRank(current.label)) ? best.deviceId : currentId;
   }
+  function automaticCamera(devices, currentId) {
+    const cameraZero=devices.find(d=>d.kind==='videoinput' && d.deviceId &&
+      /\bcamera\s*0\s*,?\s*facing\s*back\b/i.test(String(d.label||'')));
+    return cameraZero ? cameraZero.deviceId : preferredCamera(devices,currentId,'');
+  }
   function downloadLink(raw) {
     try { const u = new URL(raw); return u.protocol === 'https:' && !u.username && !u.password ? u.href : null; } catch { return null; }
   }
@@ -77,7 +82,7 @@
       seen.add(p.plan_id); return true;
     }).sort((a,b) => ['free','pro','max'].indexOf(a.plan_id) - ['free','pro','max'].indexOf(b.plan_id));
   }
-  const api = {cameraRank, preferredCamera, authLink, checkoutLink, downloadLink, freshPi, validPlans};
+  const api = {automaticCamera, cameraRank, preferredCamera, authLink, checkoutLink, downloadLink, freshPi, validPlans};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FOP_HOME_POLICY = api;
 })(typeof window !== 'undefined' ? window : globalThis);

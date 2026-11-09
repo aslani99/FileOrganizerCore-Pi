@@ -10365,6 +10365,11 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     // Keep the browser's rear choice when labels provide no better evidence.
     return best && (!current || cameraRank(best.label)>cameraRank(current.label)) ? best.deviceId : currentId;
   }
+  function automaticCamera(devices, currentId) {
+    const cameraZero=devices.find(d=>d.kind==='videoinput' && d.deviceId &&
+      /\bcamera\s*0\s*,?\s*facing\s*back\b/i.test(String(d.label||'')));
+    return cameraZero ? cameraZero.deviceId : preferredCamera(devices,currentId,'');
+  }
   function downloadLink(raw) {
     try { const u = new URL(raw); return u.protocol === 'https:' && !u.username && !u.password ? u.href : null; } catch { return null; }
   }
@@ -10386,7 +10391,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       seen.add(p.plan_id); return true;
     }).sort((a,b) => ['free','pro','max'].indexOf(a.plan_id) - ['free','pro','max'].indexOf(b.plan_id));
   }
-  const api = {cameraRank, preferredCamera, authLink, checkoutLink, downloadLink, freshPi, validPlans};
+  const api = {automaticCamera, cameraRank, preferredCamera, authLink, checkoutLink, downloadLink, freshPi, validPlans};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FOP_HOME_POLICY = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -12952,8 +12957,8 @@ window.FOP_HOME_TEXT = {
   $('language').replaceChildren(...[['auto',''], ...Object.entries(locale.names)].map(([value,label]) => { const o=document.createElement('option');o.value=value;o.textContent=label;return o; }));
   let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false;
   let scannerMode = 'payment';
-  let cameras=[],activeCameraId='',preferredCameraId=readPref('foc-camera-id')||'';
-  let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
+  let cameras=[],activeCameraId='';
+  let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, resultURL = null;
   let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'cameraHint', scannerError = false, piMessage = 'piExplain';
   const paths = {
     folder:'M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3Z M8 13l3 3 5-5',
@@ -12991,11 +12996,11 @@ window.FOP_HOME_TEXT = {
     document.querySelectorAll('[data-t]').forEach(el => { el.textContent = T[el.dataset.t]; });
     $('theme').setAttribute('aria-label',T.themeLabel);
     $('closeScanner').setAttribute('aria-label',T.closeLabel); $('closePrivacy').setAttribute('aria-label',T.closeLabel);
-    $('switchCamera').setAttribute('aria-label',T.switchLabel); document.querySelector('nav').setAttribute('aria-label',T.navLabel);
+    document.querySelector('nav').setAttribute('aria-label',T.navLabel);
     document.title = 'FileOrganizerCore — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
     $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
-    renderPi(); renderSelected(); renderScannerMode(); renderCameras();
+    renderPi(); renderSelected(); renderScannerMode();
   }
   function renderSelected() { $('selectedPlan').textContent = scannerMode==='auth' ? T.authScanHelp : selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
   function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+String.fromCharCode(0x2068)+piUsername+String.fromCharCode(0x2069) : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
@@ -13078,7 +13083,7 @@ window.FOP_HOME_TEXT = {
     epoch++;clearTimeout(scanTimer);scanTimer=null;
     if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
-    requestingCamera=false;$('cameraChoice').disabled=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
+    requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;
   }
   function openScanner(plan='',mode='payment') {
     scannerMode=mode;if(mode==='auth')trace('PI_AUTH_SCANNER_OPENED');renderScannerMode();
@@ -13117,52 +13122,33 @@ window.FOP_HOME_TEXT = {
     ctx.drawImage(source,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
     return window.jsQR(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'})?.data || null;
   }
-  function renderCameras() {
-    const selected=activeCameraId||preferredCameraId;
-    $('cameraChoice').replaceChildren(...cameras.map((d,i)=>{
-      const o=document.createElement('option');o.value=d.deviceId;
-      o.textContent=number(i+1)+' — '+(d.label||T.switchLabel);return o;
-    }));
-    $('cameraChoice').value=selected;
-    $('cameraChoice').setAttribute('aria-label',T.switchLabel);
-    $('cameraChoiceLabel').textContent=T.switchLabel;
-    $('cameraPicker').hidden=cameras.length<2;
-    $('cameraChoice').disabled=requestingCamera;
-  }
   async function listCameras(ticket) {
     try {
       const list=await navigator.mediaDevices.enumerateDevices();
       if(ticket!==epoch)return;
-      cameras=list.filter(d=>d.kind==='videoinput'&&d.deviceId);renderCameras();
+      cameras=list.filter(d=>d.kind==='videoinput'&&d.deviceId);
     }catch{} // Permission/older browser restrictions must not prevent an available camera working.
   }
-  async function startCamera(deviceId='') {
+  async function startCamera() {
     stopCamera();clearResult();const ticket=epoch;
     if(!isSecureContext||!navigator.mediaDevices?.getUserMedia){scanStatus('cameraUnsupported',true);return;}
     if(!window.jsQR||!ctx){scanStatus('readerMissing',true);return;}
-    requestingCamera=true;renderCameras();$('stopCamera').textContent=T.cameraStop;scanStatus('cameraRequest');
+    requestingCamera=true;$('stopCamera').textContent=T.cameraStop;scanStatus('cameraRequest');
     const stale=()=>ticket!==epoch||!$('scanner').open||document.hidden;
     async function acquire(id) {
       const video={width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:24,max:30}};
-      if(id)video.deviceId={exact:id};else video.facingMode={ideal:facing};
+      if(id)video.deviceId={exact:id};else video.facingMode={ideal:'environment'};
       const received=await navigator.mediaDevices.getUserMedia({audio:false,video});
       if(stale()){received.getTracks().forEach(t=>t.stop());return false;}
       stream=received;return true;
     }
     try {
-      const requested=deviceId||preferredCameraId;
-      try {if(!await acquire(requested))return;}
-      catch(e) {
-        if(stale())return;
-        if(!requested||!['NotFoundError','OverconstrainedError'].includes(e.name))throw e;
-        preferredCameraId='';writePref('foc-camera-id','');
-        if(!await acquire(''))return;
-      }
+      if(!await acquire(''))return;
       // Permission reveals labels/device IDs. Replace a default ultra-wide with an identifiable main rear lens.
       await listCameras(ticket);if(stale())return;
       let track=stream.getVideoTracks()[0];
       activeCameraId=track.getSettings?.().deviceId||'';
-      const best=deviceId?activeCameraId:policy.preferredCamera(cameras,activeCameraId,preferredCameraId);
+      const best=policy.automaticCamera(cameras,activeCameraId);
       if(best&&best!==activeCameraId){
         const previousId=activeCameraId;
         stream.getTracks().forEach(t=>t.stop());stream=null;
@@ -13171,7 +13157,6 @@ window.FOP_HOME_TEXT = {
         track=stream.getVideoTracks()[0];activeCameraId=track.getSettings?.().deviceId||'';
       }
       if(stale())return;
-      if(deviceId&&activeCameraId===deviceId){preferredCameraId=deviceId;writePref('foc-camera-id',deviceId);}
       // Unsupported focus/zoom constraints are optional; never fail a usable camera on them.
       let capabilities={};try{capabilities=track.getCapabilities?.()||{};}catch{}
       for(const setting of [capabilities.focusMode?.includes('continuous')?{focusMode:'continuous'}:null,
@@ -13181,7 +13166,7 @@ window.FOP_HOME_TEXT = {
       }
       $('camera').srcObject=stream;await $('camera').play();if(stale())return;
       $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStop;
-      $('switchCamera').hidden=false;$('torch').hidden=!capabilities.torch;scanStatus('cameraScanning');
+      scanStatus('cameraScanning');
       const tick=()=>{
         if(stale()||!stream)return;
         try {if($('camera').readyState>=2&&$('camera').videoWidth){const code=decode($('camera'),$('camera').videoWidth,$('camera').videoHeight,1600);if(code&&acceptLink(code))return;}}
@@ -13189,15 +13174,8 @@ window.FOP_HOME_TEXT = {
         scanTimer=setTimeout(tick,250);
       };tick();
     }catch(error){if(ticket===epoch){stopCamera();scanStatus(['NotAllowedError','SecurityError'].includes(error.name)?'cameraDenied':'cameraMissing',true);}}
-    finally{if(ticket===epoch){requestingCamera=false;renderCameras();}}
+    finally{if(ticket===epoch){requestingCamera=false;}}
   }
-  $('cameraChoice').onchange=()=>{const id=$('cameraChoice').value;if(id)startCamera(id);};
-  $('switchCamera').onclick=()=>{
-    if(requestingCamera)return;
-    if(cameras.length>1){const i=cameras.findIndex(d=>d.deviceId===activeCameraId);startCamera(cameras[(i+1)%cameras.length].deviceId);}
-    else{preferredCameraId='';facing=facing==='environment'?'user':'environment';startCamera();}
-  };
-  $('torch').onclick=async()=>{try{const track=stream?.getVideoTracks()[0];if(!track)return;await track.applyConstraints({advanced:[{torch:!torchOn}]});torchOn=!torchOn;$('torch').setAttribute('aria-pressed',String(torchOn));}catch{scanStatus('torchFailed',true);}};
   $('qrImage').onchange=async()=>{
     const file=$('qrImage').files[0];if(!file)return;stopCamera();clearResult();const ticket=epoch;scanStatus('imageReading');
     if(!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>12*1024*1024){scanStatus('imageError',true);return;}
@@ -13220,7 +13198,7 @@ window.FOP_HOME_TEXT = {
   $('privacy').onclick=()=>{$('privacyDialog').showModal();document.body.classList.add('modal-open');};
   $('closePrivacy').onclick=()=>$('privacyDialog').close();
   $('privacyDialog').addEventListener('close',()=>document.body.classList.remove('modal-open'));
-  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');localStorage.removeItem('foc-camera-id');}catch{}preferredCameraId='';choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
+  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');localStorage.removeItem('foc-camera-id');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
   applyLanguage();restorePiDisplay();loadPlans();
 })();
 
