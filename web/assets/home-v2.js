@@ -19,7 +19,8 @@
   let choice = locale.choice(readPref('fop-home-language'), new URLSearchParams(location.search).get('lang'));
   let language = locale.resolve(choice, browserLanguages());
   $('language').replaceChildren(...[['auto',''], ...Object.entries(locale.names)].map(([value,label]) => { const o=document.createElement('option');o.value=value;o.textContent=label;return o; }));
-  let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false, sdkPromise;
+  let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false;
+  let scannerMode = 'payment';
   let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
   let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'cameraHint', scannerError = false, piMessage = 'piExplain';
   const paths = {
@@ -44,7 +45,7 @@
     const p = document.createElementNS(svg.namespaceURI,'path'); p.setAttribute('d',paths[el.dataset.icon] || paths.folder); svg.append(p); el.append(svg);
   });
   const number = n => new Intl.NumberFormat(language,{maximumFractionDigits:7}).format(n);
-  function scanStatus(key, error = false) { scannerMessage = key; scannerError = error; $('scanStatus').textContent = T[key]; $('scanStatus').classList.toggle('error',error); }
+  function scanStatus(key, error = false) { if(scannerMode==='auth')key=({invalidQR:'authInvalidQR',foundQR:'authFoundQR'})[key]||key; scannerMessage = key; scannerError = error; $('scanStatus').textContent = T[key]; $('scanStatus').classList.toggle('error',error); }
   function piStatus(key, error = false) { piMessage = key; $('piStatus').textContent = T[key]; $('piStatus').classList.toggle('error',error); }
   function applyLanguage() {
     for(const id of ['privacyStatus','piDebugState']){const el=$(id);if(el){const key=Object.keys(T).find(k=>T[k]===el.textContent);if(key)el.textContent=text[language][key];}}
@@ -62,10 +63,26 @@
     document.title = 'FileOrganizerCore — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
     $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
-    renderPi(); renderSelected();
+    renderPi(); renderSelected(); renderScannerMode();
   }
-  function renderSelected() { $('selectedPlan').textContent = selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
-  function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+piUsername : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
+  function renderSelected() { $('selectedPlan').textContent = scannerMode==='auth' ? T.authScanHelp : selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
+  function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+String.fromCharCode(0x2068)+piUsername+String.fromCharCode(0x2069) : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
+  function restorePiDisplay() {
+    // Display-only, per-tab handoff from a successful server approval, never an auth credential.
+    try {
+      const saved=JSON.parse(sessionStorage.getItem('foc-pi-display')||'null');
+      if(saved && typeof saved.username==='string' && saved.username.length<=128 && saved.network===(cfg.PI_SANDBOX===true?'testnet':'mainnet') && saved.expires>Date.now() && saved.expires<=Date.now()+16*60*1000)piUsername=saved.username;
+      else {sessionStorage.removeItem('foc-pi-display');piUsername='';}
+    }catch{piUsername='';}
+    renderPi();
+  }
+  window.addEventListener('pageshow',restorePiDisplay);
+  function renderScannerMode() {
+    const auth=scannerMode==='auth';
+    for(const [id,key] of [['scannerTitle',auth?'authScanTitle':'scanTitle'],['scannerStep',auth?'piLogin':'scanStep'],['scannerManual',auth?'authScanTitle':'manual'],['scannerFound',auth?'authFoundQR':'validLink'],['scannerConfirm',auth?'authScanHelp':'confirmInfo'],['openPayment',auth?'authContinue':'continue']])$(id).textContent=T[key];
+    $('paymentLink').placeholder=auth?'https://…/pi-login.html#…':'https://…/checkout.html?token=…';
+    renderSelected();
+  }
   function applyTheme(value) { document.body.dataset.theme = value; $('theme').setAttribute('aria-pressed',String(value === 'light')); }
   const browserTheme = matchMedia('(prefers-color-scheme:dark)');
   let manualTheme = ['light','dark'].includes(readPref('fop-home-theme')) ? readPref('fop-home-theme') : null;
@@ -131,7 +148,8 @@
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
     requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
   }
-  function openScanner(plan='') {
+  function openScanner(plan='',mode='payment') {
+    scannerMode=mode;if(mode==='auth')trace('PI_AUTH_SCANNER_OPENED');renderScannerMode();
     selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('cameraHint');
     $('scanner').showModal();document.body.classList.add('modal-open');startCamera();
   }
@@ -143,7 +161,7 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden){const active=!!stream||requestingCamera;stopCamera();if(active)scanStatus('cameraStopped');}});
   window.addEventListener('pagehide',stopCamera);
   function acceptLink(raw) {
-    clearResult();const url=policy.checkoutLink(raw,location.href,cfg.CHECKOUT_URL);
+    clearResult();const url=scannerMode==='auth'?policy.authLink(raw,location.href):policy.checkoutLink(raw,location.href,cfg.CHECKOUT_URL);
     if(!url){scanStatus('invalidQR',true);return false;}
     stopCamera();resultURL=url;$('resultHost').textContent=url.host+url.pathname;$('scanResult').hidden=false;scanStatus('foundQR');$('openPayment').focus();return true;
   }
@@ -151,8 +169,13 @@
   $('paymentLink').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('checkLink').click();}});
   $('paymentLink').addEventListener('input',clearResult);
   $('openPayment').onclick=()=>{
-    if(!resultURL)return;const safe=policy.checkoutLink(resultURL.href,location.href,cfg.CHECKOUT_URL);if(!safe)return;
-    if(!safe.searchParams.has('lang'))safe.searchParams.set('lang',language);
+    if(!resultURL)return;const safe=scannerMode==='auth'?policy.authLink(resultURL.href,location.href):policy.checkoutLink(resultURL.href,location.href,cfg.CHECKOUT_URL);if(!safe)return;
+    if(scannerMode==='auth') {
+      const [secret,params]=safe.hash.slice(1).split('?'), q=new URLSearchParams(params||'');
+      if(!q.has('lang'))q.set('lang',language);
+      if(!q.has('theme'))q.set('theme',document.body.dataset.theme);
+      safe.hash=secret+'?'+q.toString();
+    } else if(!safe.searchParams.has('lang'))safe.searchParams.set('lang',language);
     stopCamera();location.assign(safe.href);
   };
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
@@ -200,27 +223,13 @@
     }catch{if(ticket===epoch)scanStatus('imageError',true);}
     finally{if(objectURL)URL.revokeObjectURL(objectURL);$('qrImage').value='';}
   };
-  function loadPiSDK() {
-    if(window.Pi)return Promise.resolve();if(sdkPromise)return sdkPromise;
-    sdkPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src='https://sdk.minepi.com/pi-sdk.js';script.async=true;
-      const timeout=setTimeout(()=>{script.remove();reject(Error());},15000);
-      script.onload=()=>{clearTimeout(timeout);window.Pi?resolve():reject(Error());};script.onerror=()=>{clearTimeout(timeout);script.remove();reject(Error());};document.head.append(script);
-    }).catch(error=>{sdkPromise=null;throw error;});return sdkPromise;
-  }
-  $('piAuth').onclick=async()=>{
-    if(piBusy)return;
-    if(piUsername){piUsername='';renderPi();piStatus('piExplain');return;}
-    piBusy=true;renderPi();piStatus('piBusy');trace('PI_CONNECT_REQUEST');
-    try{await loadPiSDK();trace('PI_SDK_LOADED');await window.Pi.init({version:'2.0',sandbox:cfg.PI_SANDBOX===true});
-      trace('PI_AUTH_STARTED');const auth=await window.Pi.authenticate(['username'],()=>{});
-      if(!auth?.user?.username)throw Error();piUsername=String(auth.user.username);piStatus('piExplain');trace('PI_AUTH_SUCCESS');
-    }catch{piStatus('piFailed',true);trace('PI_AUTH_FAILED');}
-    finally{piBusy=false;renderPi();}
+  $('piAuth').onclick=()=>{
+    if(piUsername){piUsername='';try{sessionStorage.removeItem('foc-pi-display')}catch{}renderPi();piStatus('piExplain');return;}
+    openScanner('', 'auth');
   };
   $('privacy').onclick=()=>{$('privacyDialog').showModal();document.body.classList.add('modal-open');};
   $('closePrivacy').onclick=()=>$('privacyDialog').close();
   $('privacyDialog').addEventListener('close',()=>document.body.classList.remove('modal-open'));
   $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
-  applyLanguage();loadPlans();
+  applyLanguage();restorePiDisplay();loadPlans();
 })();

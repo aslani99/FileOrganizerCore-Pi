@@ -81,12 +81,12 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
   assert.ok(await page.evaluate(()=>__hiddenTracks.every(t=>t.readyState==='ended')));
   await page.evaluate(()=>{delete document.hidden;});await page.locator('#closeScanner').click();
  }
- await page.locator('#piAuth').click();await page.waitForSelector('#piUser:not([hidden])');assert.equal(await page.evaluate(()=>__authCalls),1);
+ await page.locator('#piAuth').click();assert.equal(await page.locator('#scanner').evaluate(e=>e.open),true);assert.equal(await page.evaluate(()=>window.__authCalls||0),0);await page.locator('#closeScanner').click();
  const diagnostic=await page.locator('#piDebugLog').textContent();
- assert.ok(diagnostic.includes('PI_AUTH_SUCCESS'));assert.ok(!diagnostic.includes('test-pioneer'));assert.ok(!diagnostic.includes('token='));
+ assert.ok(diagnostic.includes('PI_AUTH_SCANNER_OPENED'));assert.ok(!diagnostic.includes('test-pioneer'));assert.ok(!diagnostic.includes('token='));
  await page.locator('#piDebug summary').click();await page.locator('#piDebugClear').click();assert.equal(await page.locator('#piDebugLog').textContent(),'');
  await page.locator('#piDebug summary').click();
- await page.locator('#piAuth').click();assert.equal(await page.locator('#piUser').isVisible(),false);
+ assert.equal(await page.locator('#piUser').isVisible(),false);
  offline=true;await page.locator('#reloadPlans').click();await page.waitForFunction(()=>document.getElementById('plansStatus').classList.contains('error'));assert.equal(await page.locator('.plan').count(),0);
  offline=false;await page.locator('#reloadPlans').click();await page.waitForSelector('.plan');
  if(width===1280||width===390){await page.screenshot({path:path.resolve(__dirname,`../preview-${language}-${theme}-${width}.png`),fullPage:true});}

@@ -27,7 +27,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Open this page in Pi Browser.",
     "loading": "Loading…",
     "account": "Pi Account:",
-    "language": "Language"
+    "language": "Language",
+    "return_home": "Back to home"
   },
   "fa": {
     "login": "ورود با پای",
@@ -57,7 +58,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "این صفحه را در پای بروزر باز کنید.",
     "loading": "در حال بارگذاری…",
     "account": "حساب پای:",
-    "language": "زبان"
+    "language": "زبان",
+    "return_home": "بازگشت به صفحهٔ اصلی"
   },
   "ar": {
     "login": "الدخول باستخدام Pi",
@@ -87,7 +89,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "افتح الصفحة في Pi Browser.",
     "loading": "جارٍ التحميل…",
     "account": "حساب Pi:",
-    "language": "اللغة"
+    "language": "اللغة",
+    "return_home": "العودة إلى الرئيسية"
   },
   "de": {
     "login": "Mit Pi anmelden",
@@ -117,7 +120,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Diese Seite im Pi Browser öffnen.",
     "loading": "Wird geladen…",
     "account": "Pi-Konto:",
-    "language": "Sprache"
+    "language": "Sprache",
+    "return_home": "Zur Startseite"
   },
   "es": {
     "login": "Iniciar sesión con Pi",
@@ -147,7 +151,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Abre esta página en Pi Browser.",
     "loading": "Cargando…",
     "account": "Cuenta Pi:",
-    "language": "Idioma"
+    "language": "Idioma",
+    "return_home": "Volver al inicio"
   },
   "fr": {
     "login": "Se connecter avec Pi",
@@ -177,7 +182,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Ouvrez cette page dans Pi Browser.",
     "loading": "Chargement…",
     "account": "Compte Pi :",
-    "language": "Langue"
+    "language": "Langue",
+    "return_home": "Retour à l’accueil"
   },
   "zh-Hans": {
     "login": "使用 Pi 登录",
@@ -207,7 +213,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "请在 Pi Browser 中打开此页面。",
     "loading": "正在加载…",
     "account": "Pi 账户：",
-    "language": "语言"
+    "language": "语言",
+    "return_home": "返回首页"
   },
   "zh-Hant": {
     "login": "使用 Pi 登入",
@@ -237,7 +244,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "請在 Pi Browser 中開啟此頁面。",
     "loading": "載入中…",
     "account": "Pi 帳戶：",
-    "language": "語言"
+    "language": "語言",
+    "return_home": "返回首頁"
   },
   "ja": {
     "login": "Pi でログイン",
@@ -267,7 +275,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "このページを Pi Browser で開いてください。",
     "loading": "読み込み中…",
     "account": "Piアカウント:",
-    "language": "言語"
+    "language": "言語",
+    "return_home": "ホームへ戻る"
   },
   "ko": {
     "login": "Pi로 로그인",
@@ -297,7 +306,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Pi Browser에서 이 페이지를 여세요.",
     "loading": "불러오는 중…",
     "account": "Pi 계정:",
-    "language": "언어"
+    "language": "언어",
+    "return_home": "홈으로 돌아가기"
   },
   "ru": {
     "login": "Войти через Pi",
@@ -327,7 +337,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Откройте эту страницу в Pi Browser.",
     "loading": "Загрузка…",
     "account": "Аккаунт Pi:",
-    "language": "Язык"
+    "language": "Язык",
+    "return_home": "На главную"
   },
   "pt": {
     "login": "Entrar com Pi",
@@ -357,7 +368,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Abra esta página no Pi Browser.",
     "loading": "Carregando…",
     "account": "Conta Pi:",
-    "language": "Idioma"
+    "language": "Idioma",
+    "return_home": "Voltar ao início"
   },
   "it": {
     "login": "Accedi con Pi",
@@ -387,7 +399,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Apri questa pagina in Pi Browser.",
     "loading": "Caricamento…",
     "account": "Account Pi:",
-    "language": "Lingua"
+    "language": "Lingua",
+    "return_home": "Torna alla home"
   },
   "hi": {
     "login": "Pi से लॉग इन करें",
@@ -417,7 +430,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "यह पेज Pi Browser में खोलें।",
     "loading": "लोड हो रहा है…",
     "account": "पाई खाता:",
-    "language": "भाषा"
+    "language": "भाषा",
+    "return_home": "होम पर वापस जाएँ"
   },
   "ur": {
     "login": "پائی سے لاگ ان",
@@ -447,7 +461,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "یہ صفحہ پائی براؤزر میں کھولیں۔",
     "loading": "لوڈ ہو رہا ہے…",
     "account": "پائی اکاؤنٹ:",
-    "language": "زبان"
+    "language": "زبان",
+    "return_home": "مرکزی صفحے پر واپس جائیں"
   },
   "id": {
     "login": "Masuk dengan Pi",
@@ -477,7 +492,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Buka halaman ini di Pi Browser.",
     "loading": "Memuat…",
     "account": "Akun Pi:",
-    "language": "Bahasa"
+    "language": "Bahasa",
+    "return_home": "Kembali ke beranda"
   },
   "vi": {
     "login": "Đăng nhập bằng Pi",
@@ -507,7 +523,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Mở trang này trong Pi Browser.",
     "loading": "Đang tải…",
     "account": "Tài khoản Pi:",
-    "language": "Ngôn ngữ"
+    "language": "Ngôn ngữ",
+    "return_home": "Về trang chủ"
   },
   "tr": {
     "login": "Pi ile giriş yap",
@@ -537,7 +554,8 @@ window.FOC_PI_TEXT = {
     "open_browser": "Bu sayfayı Pi Browser ile açın.",
     "loading": "Yükleniyor…",
     "account": "Pi hesabı:",
-    "language": "Dil"
+    "language": "Dil",
+    "return_home": "Ana sayfaya dön"
   },
   "az": {
     "login": "Pi ilə daxil ol",
@@ -567,6 +585,7 @@ window.FOC_PI_TEXT = {
     "open_browser": "Bu səhifəni Pi Browser-də açın.",
     "loading": "Yüklənir…",
     "account": "Pi hesabı:",
-    "language": "Dil"
+    "language": "Dil",
+    "return_home": "Ana səhifəyə qayıt"
   }
 };

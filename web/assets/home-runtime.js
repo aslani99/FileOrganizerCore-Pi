@@ -10333,6 +10333,22 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
     if (lang && !/^[a-zA-Z]{2,3}(?:-[a-zA-Z]{2,8})?$/.test(lang)) return null;
     return url;
   }
+  function authLink(raw, base) {
+    if (typeof raw !== 'string' || raw.length > 2048) return null;
+    let u, home; try { u = new URL(raw.trim()); home = new URL(base); } catch { return null; }
+    // Login secrets must never be forwarded to another origin or an arbitrary path.
+    if (u.protocol !== 'https:' || u.origin !== home.origin || u.username || u.password || u.search) return null;
+    const target = new URL('pi-login.html', home);
+    if (![target.pathname, target.pathname.replace(/\.html$/, '')].includes(u.pathname)) return null;
+    const fragment = u.hash.slice(1).split('?');
+    if (fragment.length > 2 || !/^[a-f0-9]{64}$/.test(fragment[0])) return null;
+    const q = new URLSearchParams(fragment[1] || '');
+    if ([...q.keys()].some(k => !['lang','theme'].includes(k)) || q.getAll('lang').length > 1 || q.getAll('theme').length > 1) return null;
+    if (q.has('lang') && !/^[a-zA-Z]{2,3}(?:-[a-zA-Z]{2,8})?$/.test(q.get('lang'))) return null;
+    if (q.has('theme') && !['light','dark'].includes(q.get('theme'))) return null;
+    u.pathname = target.pathname;
+    return u;
+  }
   function downloadLink(raw) {
     try { const u = new URL(raw); return u.protocol === 'https:' && !u.username && !u.password ? u.href : null; } catch { return null; }
   }
@@ -10354,7 +10370,7 @@ function findAlignmentPattern(matrix, alignmentPatternQuads, topRight, topLeft, 
       seen.add(p.plan_id); return true;
     }).sort((a,b) => ['free','pro','max'].indexOf(a.plan_id) - ['free','pro','max'].indexOf(b.plan_id));
   }
-  const api = {checkoutLink, downloadLink, freshPi, validPlans};
+  const api = {authLink, checkoutLink, downloadLink, freshPi, validPlans};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FOP_HOME_POLICY = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -10435,9 +10451,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "یک شروع ساده. فضای بیشتر برای رشد.",
     "refresh": "به‌روزرسانی",
     "priceNote": "قیمت و مدت از سرور دریافت می‌شوند. مبلغ نهایی Pi در لینک پرداخت اپ مشخص می‌شود.",
-    "piTitle": "از اپ تا کیف پول، یک مسیر مشخص.",
-    "piBody": "در اپ ویندوز وارد حساب شوید و لینک پرداخت بسازید. QR را اینجا اسکن کنید؛ تأیید پرداخت در صفحهٔ اختصاصی انجام می‌شود.",
-    "piExplain": "ورود Pi در این صفحه، جایگزین حساب ایمیلی اپ نیست.",
+    "piTitle": "اسکن کد ورود با پای",
+    "piBody": "کد QR ورود با پای را از اپ دسکتاپ اسکن کنید؛ سپس تطابق کد و حساب خود را تأیید کنید.",
+    "piExplain": "کد QR ورود با پای را از اپ دسکتاپ اسکن کنید؛ سپس تطابق کد و حساب خود را تأیید کنید.",
     "piLogin": "اتصال به پای",
     "faqTitle": "قبل از شروع",
     "helpIntro": "پاسخ‌های کوتاه برای مسیر نصب، اسکن و خرید.",
@@ -10509,7 +10525,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "تغییر دوربین",
     "navLabel": "ناوبری",
     "browserLanguage": "زبان مرورگر",
-    "languageLabel": "زبان"
+    "languageLabel": "زبان",
+    "authScanTitle": "اسکن کد ورود با پای",
+    "authScanHelp": "کد QR ورود با پای را از اپ دسکتاپ اسکن کنید؛ سپس تطابق کد و حساب خود را تأیید کنید.",
+    "authInvalidQR": "این کد QR، لینک معتبر ورود به این سایت نیست.",
+    "authFoundQR": "لینک ورود شناسایی شد",
+    "authContinue": "ادامه برای تأیید حساب",
+    "returnHome": "بازگشت به صفحهٔ اصلی"
   },
   "en": {
     "diagnosticsTitle": "Pi connection diagnostics",
@@ -10561,9 +10583,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "A simple start. Room to grow.",
     "refresh": "Refresh",
     "priceNote": "Prices and durations come from the server. Your app payment link determines the final Pi amount.",
-    "piTitle": "From your app to your wallet.",
-    "piBody": "Sign into the Windows app and create a payment link. Scan its QR here, then confirm on the dedicated checkout page.",
-    "piExplain": "Connecting Pi here does not replace your email account in the app.",
+    "piTitle": "Scan Pi sign-in QR",
+    "piBody": "Scan the Pi sign-in QR from the desktop app, then confirm the matching code and your account.",
+    "piExplain": "Scan the Pi sign-in QR from the desktop app, then confirm the matching code and your account.",
     "piLogin": "Connect to Pi",
     "faqTitle": "Before you begin",
     "helpIntro": "A few answers to get you from installation to checkout.",
@@ -10635,7 +10657,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Switch camera",
     "navLabel": "Navigation",
     "browserLanguage": "Browser language",
-    "languageLabel": "Language"
+    "languageLabel": "Language",
+    "authScanTitle": "Scan Pi sign-in QR",
+    "authScanHelp": "Scan the Pi sign-in QR from the desktop app, then confirm the matching code and your account.",
+    "authInvalidQR": "This is not a valid sign-in QR for this website.",
+    "authFoundQR": "Sign-in link detected",
+    "authContinue": "Continue to account confirmation",
+    "returnHome": "Back to home"
   },
   "az": {
     "diagnosticsTitle": "Pi bağlantısının diaqnostikası",
@@ -10687,9 +10715,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Sadə başlanğıc, inkişaf üçün yer.",
     "refresh": "Yenilə",
     "priceNote": "Qiymət və müddət serverdən gəlir. Son Pi məbləğini ödəniş keçidi müəyyən edir.",
-    "piTitle": "Tətbiqdən cüzdana.",
-    "piBody": "Windows tətbiqinə daxil olub ödəniş keçidi yaradın. QR kodunu skan edib ödəniş səhifəsində təsdiqləyin.",
-    "piExplain": "Burada Pi bağlantısı tətbiqin e-poçt hesabını əvəz etmir.",
+    "piTitle": "Pi giriş QR kodunu skan edin",
+    "piBody": "Masaüstü tətbiqdəki Pi giriş QR kodunu skan edin, sonra uyğun kodu və hesabınızı təsdiqləyin.",
+    "piExplain": "Masaüstü tətbiqdəki Pi giriş QR kodunu skan edin, sonra uyğun kodu və hesabınızı təsdiqləyin.",
     "piLogin": "Pi-yə qoşul",
     "faqTitle": "Başlamazdan əvvəl",
     "helpIntro": "Quraşdırma və ödəniş barədə cavablar.",
@@ -10761,7 +10789,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Kameranı dəyiş",
     "navLabel": "Naviqasiya",
     "browserLanguage": "Brauzer dili",
-    "languageLabel": "Dil"
+    "languageLabel": "Dil",
+    "authScanTitle": "Pi giriş QR kodunu skan edin",
+    "authScanHelp": "Masaüstü tətbiqdəki Pi giriş QR kodunu skan edin, sonra uyğun kodu və hesabınızı təsdiqləyin.",
+    "authInvalidQR": "Bu sayt üçün etibarlı giriş QR kodu deyil.",
+    "authFoundQR": "Giriş keçidi aşkarlandı",
+    "authContinue": "Hesab təsdiqinə davam edin",
+    "returnHome": "Ana səhifəyə qayıt"
   },
   "tr": {
     "diagnosticsTitle": "Pi bağlantı tanılaması",
@@ -10813,9 +10847,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Kolay başlangıç, gelişme alanı.",
     "refresh": "Yenile",
     "priceNote": "Fiyat ve süre sunucudan gelir. Son Pi tutarını ödeme bağlantısı belirler.",
-    "piTitle": "Uygulamadan cüzdana.",
-    "piBody": "Windows uygulamasına girip ödeme bağlantısı oluşturun. QR kodunu tarayıp ödeme sayfasında onaylayın.",
-    "piExplain": "Burada Pi bağlantısı, uygulamadaki e-posta hesabının yerine geçmez.",
+    "piTitle": "Pi giriş QR kodunu tara",
+    "piBody": "Masaüstü uygulamasındaki Pi giriş QR kodunu tarayın, ardından eşleşen kodu ve hesabınızı onaylayın.",
+    "piExplain": "Masaüstü uygulamasındaki Pi giriş QR kodunu tarayın, ardından eşleşen kodu ve hesabınızı onaylayın.",
     "piLogin": "Pi’ye bağlan",
     "faqTitle": "Başlamadan önce",
     "helpIntro": "Kurulum ve ödeme hakkında yanıtlar.",
@@ -10887,7 +10921,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Kamerayı değiştir",
     "navLabel": "Gezinme",
     "browserLanguage": "Tarayıcı dili",
-    "languageLabel": "Dil"
+    "languageLabel": "Dil",
+    "authScanTitle": "Pi giriş QR kodunu tara",
+    "authScanHelp": "Masaüstü uygulamasındaki Pi giriş QR kodunu tarayın, ardından eşleşen kodu ve hesabınızı onaylayın.",
+    "authInvalidQR": "Bu site için geçerli bir giriş QR kodu değil.",
+    "authFoundQR": "Giriş bağlantısı algılandı",
+    "authContinue": "Hesap onayına devam et",
+    "returnHome": "Ana sayfaya dön"
   },
   "vi": {
     "diagnosticsTitle": "Chẩn đoán kết nối Pi",
@@ -10939,9 +10979,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Bắt đầu đơn giản. Có chỗ để phát triển.",
     "refresh": "Làm mới",
     "priceNote": "Giá và thời hạn lấy từ máy chủ. Liên kết thanh toán xác định số Pi cuối cùng.",
-    "piTitle": "Từ ứng dụng đến ví.",
-    "piBody": "Đăng nhập ứng dụng Windows, tạo liên kết, quét QR và xác nhận trên trang thanh toán.",
-    "piExplain": "Kết nối Pi ở đây không thay thế tài khoản email trong ứng dụng.",
+    "piTitle": "Quét QR đăng nhập Pi",
+    "piBody": "Quét QR đăng nhập Pi từ ứng dụng máy tính, rồi xác nhận mã trùng khớp và tài khoản của bạn.",
+    "piExplain": "Quét QR đăng nhập Pi từ ứng dụng máy tính, rồi xác nhận mã trùng khớp và tài khoản của bạn.",
     "piLogin": "Kết nối Pi",
     "faqTitle": "Trước khi bắt đầu",
     "helpIntro": "Giải đáp về cài đặt và thanh toán.",
@@ -11013,7 +11053,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Đổi camera",
     "navLabel": "Điều hướng",
     "browserLanguage": "Ngôn ngữ trình duyệt",
-    "languageLabel": "Ngôn ngữ"
+    "languageLabel": "Ngôn ngữ",
+    "authScanTitle": "Quét QR đăng nhập Pi",
+    "authScanHelp": "Quét QR đăng nhập Pi từ ứng dụng máy tính, rồi xác nhận mã trùng khớp và tài khoản của bạn.",
+    "authInvalidQR": "Đây không phải QR đăng nhập hợp lệ cho trang này.",
+    "authFoundQR": "Đã nhận diện liên kết đăng nhập",
+    "authContinue": "Tiếp tục xác nhận tài khoản",
+    "returnHome": "Về trang chủ"
   },
   "ko": {
     "diagnosticsTitle": "Pi 연결 진단",
@@ -11065,9 +11111,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "쉽게 시작하고 넓혀 가세요.",
     "refresh": "새로고침",
     "priceNote": "가격과 기간은 서버에서 가져옵니다. 최종 Pi 금액은 결제 링크에서 결정됩니다.",
-    "piTitle": "앱에서 지갑까지.",
-    "piBody": "Windows 앱에 로그인해 결제 링크를 만드세요. QR을 스캔하고 결제 페이지에서 확인하세요.",
-    "piExplain": "이곳의 Pi 연결은 앱의 이메일 계정을 대체하지 않습니다.",
+    "piTitle": "Pi 로그인 QR 스캔",
+    "piBody": "데스크톱 앱의 Pi 로그인 QR을 스캔한 다음 일치하는 코드와 본인 계정을 확인하세요.",
+    "piExplain": "데스크톱 앱의 Pi 로그인 QR을 스캔한 다음 일치하는 코드와 본인 계정을 확인하세요.",
     "piLogin": "Pi 연결",
     "faqTitle": "시작하기 전에",
     "helpIntro": "설치와 결제에 대한 답변.",
@@ -11139,7 +11185,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "카메라 전환",
     "navLabel": "탐색",
     "browserLanguage": "브라우저 언어",
-    "languageLabel": "언어"
+    "languageLabel": "언어",
+    "authScanTitle": "Pi 로그인 QR 스캔",
+    "authScanHelp": "데스크톱 앱의 Pi 로그인 QR을 스캔한 다음 일치하는 코드와 본인 계정을 확인하세요.",
+    "authInvalidQR": "이 사이트의 유효한 로그인 QR이 아닙니다.",
+    "authFoundQR": "로그인 링크를 찾았습니다",
+    "authContinue": "계정 확인으로 계속",
+    "returnHome": "홈으로 돌아가기"
   },
   "hi": {
     "diagnosticsTitle": "Pi कनेक्शन जाँच",
@@ -11191,9 +11243,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "आसान शुरुआत, आगे बढ़ने की जगह।",
     "refresh": "रीफ़्रेश करें",
     "priceNote": "कीमत और अवधि सर्वर से आती हैं। अंतिम Pi राशि भुगतान लिंक तय करता है।",
-    "piTitle": "ऐप से वॉलेट तक।",
-    "piBody": "Windows ऐप में लॉगिन कर भुगतान लिंक बनाएँ। QR स्कैन करके भुगतान पेज पर पुष्टि करें।",
-    "piExplain": "यहाँ Pi कनेक्शन ऐप के ईमेल खाते की जगह नहीं लेता।",
+    "piTitle": "Pi साइन-इन QR स्कैन करें",
+    "piBody": "डेस्कटॉप ऐप का Pi साइन-इन QR स्कैन करें, फिर मेल खाते कोड और अपने खाते की पुष्टि करें।",
+    "piExplain": "डेस्कटॉप ऐप का Pi साइन-इन QR स्कैन करें, फिर मेल खाते कोड और अपने खाते की पुष्टि करें।",
     "piLogin": "Pi से जुड़ें",
     "faqTitle": "शुरू करने से पहले",
     "helpIntro": "इंस्टॉलेशन और भुगतान के जवाब।",
@@ -11265,7 +11317,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "कैमरा बदलें",
     "navLabel": "नेविगेशन",
     "browserLanguage": "ब्राउज़र की भाषा",
-    "languageLabel": "भाषा"
+    "languageLabel": "भाषा",
+    "authScanTitle": "Pi साइन-इन QR स्कैन करें",
+    "authScanHelp": "डेस्कटॉप ऐप का Pi साइन-इन QR स्कैन करें, फिर मेल खाते कोड और अपने खाते की पुष्टि करें।",
+    "authInvalidQR": "यह इस वेबसाइट के लिए मान्य साइन-इन QR नहीं है।",
+    "authFoundQR": "साइन-इन लिंक मिला",
+    "authContinue": "खाते की पुष्टि के लिए आगे बढ़ें",
+    "returnHome": "होम पर वापस जाएँ"
   },
   "ur": {
     "diagnosticsTitle": "Pi کنکشن کی تشخیص",
@@ -11317,9 +11375,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "آسان آغاز، آگے بڑھنے کی گنجائش۔",
     "refresh": "تازہ کریں",
     "priceNote": "قیمت اور مدت سرور سے آتی ہیں۔ آخری Pi رقم ادائیگی لنک میں طے ہوتی ہے۔",
-    "piTitle": "ایپ سے والیٹ تک۔",
-    "piBody": "Windows ایپ میں داخل ہوکر ادائیگی لنک بنائیں، QR اسکین کریں اور ادائیگی صفحے پر تصدیق کریں۔",
-    "piExplain": "یہاں Pi سے اتصال ایپ کے ای میل اکاؤنٹ کا متبادل نہیں۔",
+    "piTitle": "Pi سائن ان QR اسکین کریں",
+    "piBody": "ڈیسک ٹاپ ایپ کا Pi سائن ان QR اسکین کریں، پھر ملتے ہوئے کوڈ اور اپنے اکاؤنٹ کی تصدیق کریں۔",
+    "piExplain": "ڈیسک ٹاپ ایپ کا Pi سائن ان QR اسکین کریں، پھر ملتے ہوئے کوڈ اور اپنے اکاؤنٹ کی تصدیق کریں۔",
     "piLogin": "Pi سے جڑیں",
     "faqTitle": "شروع کرنے سے پہلے",
     "helpIntro": "تنصیب اور ادائیگی کے جوابات۔",
@@ -11391,7 +11449,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "کیمرہ بدلیں",
     "navLabel": "نیویگیشن",
     "browserLanguage": "براؤزر کی زبان",
-    "languageLabel": "زبان"
+    "languageLabel": "زبان",
+    "authScanTitle": "Pi سائن ان QR اسکین کریں",
+    "authScanHelp": "ڈیسک ٹاپ ایپ کا Pi سائن ان QR اسکین کریں، پھر ملتے ہوئے کوڈ اور اپنے اکاؤنٹ کی تصدیق کریں۔",
+    "authInvalidQR": "یہ اس ویب سائٹ کے لیے درست سائن ان QR نہیں ہے۔",
+    "authFoundQR": "سائن ان لنک مل گیا",
+    "authContinue": "اکاؤنٹ کی تصدیق کے لیے جاری رکھیں",
+    "returnHome": "مرکزی صفحے پر واپس جائیں"
   },
   "fr": {
     "diagnosticsTitle": "Diagnostic de connexion Pi",
@@ -11443,9 +11507,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Un début simple. De la place pour évoluer.",
     "refresh": "Actualiser",
     "priceNote": "Prix et durées viennent du serveur. Le lien de paiement fixe le montant final en Pi.",
-    "piTitle": "De l’application au portefeuille.",
-    "piBody": "Connectez-vous dans l’application Windows, créez un lien, scannez son QR et confirmez sur la page de paiement.",
-    "piExplain": "La connexion Pi ne remplace pas votre compte e-mail dans l’application.",
+    "piTitle": "Scanner le QR de connexion Pi",
+    "piBody": "Scannez le QR de connexion Pi de l’application de bureau, puis confirmez le code correspondant et votre compte.",
+    "piExplain": "Scannez le QR de connexion Pi de l’application de bureau, puis confirmez le code correspondant et votre compte.",
     "piLogin": "Se connecter à Pi",
     "faqTitle": "Avant de commencer",
     "helpIntro": "Des réponses sur l’installation et le paiement.",
@@ -11517,7 +11581,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Changer de caméra",
     "navLabel": "Navigation",
     "browserLanguage": "Langue du navigateur",
-    "languageLabel": "Langue"
+    "languageLabel": "Langue",
+    "authScanTitle": "Scanner le QR de connexion Pi",
+    "authScanHelp": "Scannez le QR de connexion Pi de l’application de bureau, puis confirmez le code correspondant et votre compte.",
+    "authInvalidQR": "Ce QR de connexion n’est pas valide pour ce site.",
+    "authFoundQR": "Lien de connexion détecté",
+    "authContinue": "Continuer vers la confirmation du compte",
+    "returnHome": "Retour à l’accueil"
   },
   "id": {
     "diagnosticsTitle": "Diagnostik koneksi Pi",
@@ -11569,9 +11639,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Mulai mudah. Ruang untuk berkembang.",
     "refresh": "Segarkan",
     "priceNote": "Harga dan durasi dari server. Tautan pembayaran menentukan jumlah Pi akhir.",
-    "piTitle": "Dari aplikasi ke dompet.",
-    "piBody": "Masuk ke aplikasi Windows, buat tautan, pindai QR dan konfirmasi di halaman pembayaran.",
-    "piExplain": "Menghubungkan Pi di sini tidak menggantikan akun email aplikasi.",
+    "piTitle": "Pindai QR masuk Pi",
+    "piBody": "Pindai QR masuk Pi dari aplikasi desktop, lalu konfirmasi kecocokan kode dan akun Anda.",
+    "piExplain": "Pindai QR masuk Pi dari aplikasi desktop, lalu konfirmasi kecocokan kode dan akun Anda.",
     "piLogin": "Hubungkan Pi",
     "faqTitle": "Sebelum mulai",
     "helpIntro": "Jawaban tentang instalasi dan pembayaran.",
@@ -11643,7 +11713,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Ganti kamera",
     "navLabel": "Navigasi",
     "browserLanguage": "Bahasa browser",
-    "languageLabel": "Bahasa"
+    "languageLabel": "Bahasa",
+    "authScanTitle": "Pindai QR masuk Pi",
+    "authScanHelp": "Pindai QR masuk Pi dari aplikasi desktop, lalu konfirmasi kecocokan kode dan akun Anda.",
+    "authInvalidQR": "Ini bukan QR masuk yang valid untuk situs ini.",
+    "authFoundQR": "Tautan masuk ditemukan",
+    "authContinue": "Lanjutkan ke konfirmasi akun",
+    "returnHome": "Kembali ke beranda"
   },
   "pt": {
     "diagnosticsTitle": "Diagnóstico da conexão Pi",
@@ -11695,9 +11771,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Comece de forma simples. Cresça depois.",
     "refresh": "Atualizar",
     "priceNote": "Preços e durações vêm do servidor. O link define o valor final em Pi.",
-    "piTitle": "Do aplicativo à carteira.",
-    "piBody": "Entre no aplicativo Windows, crie o link, leia o QR e confirme na página de pagamento.",
-    "piExplain": "Conectar Pi aqui não substitui sua conta de e-mail no aplicativo.",
+    "piTitle": "Escanear QR de acesso Pi",
+    "piBody": "Escaneie o QR de acesso Pi do aplicativo desktop e confirme o código correspondente e sua conta.",
+    "piExplain": "Escaneie o QR de acesso Pi do aplicativo desktop e confirme o código correspondente e sua conta.",
     "piLogin": "Conectar ao Pi",
     "faqTitle": "Antes de começar",
     "helpIntro": "Respostas sobre instalação e pagamento.",
@@ -11769,7 +11845,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Trocar câmera",
     "navLabel": "Navegação",
     "browserLanguage": "Idioma do navegador",
-    "languageLabel": "Idioma"
+    "languageLabel": "Idioma",
+    "authScanTitle": "Escanear QR de acesso Pi",
+    "authScanHelp": "Escaneie o QR de acesso Pi do aplicativo desktop e confirme o código correspondente e sua conta.",
+    "authInvalidQR": "Este não é um QR de acesso válido para este site.",
+    "authFoundQR": "Link de acesso detectado",
+    "authContinue": "Continuar para confirmar a conta",
+    "returnHome": "Voltar ao início"
   },
   "ru": {
     "diagnosticsTitle": "Диагностика подключения Pi",
@@ -11821,9 +11903,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Простое начало. Возможность роста.",
     "refresh": "Обновить",
     "priceNote": "Цены и сроки поступают с сервера. Итоговую сумму Pi определяет платёжная ссылка.",
-    "piTitle": "Из приложения в кошелёк.",
-    "piBody": "Войдите в приложение Windows, создайте ссылку, сканируйте QR и подтвердите на странице оплаты.",
-    "piExplain": "Подключение Pi здесь не заменяет аккаунт приложения с электронной почтой.",
+    "piTitle": "Сканировать QR входа Pi",
+    "piBody": "Сканируйте QR входа Pi в настольном приложении, затем подтвердите совпадающий код и свой аккаунт.",
+    "piExplain": "Сканируйте QR входа Pi в настольном приложении, затем подтвердите совпадающий код и свой аккаунт.",
     "piLogin": "Подключить Pi",
     "faqTitle": "Перед началом",
     "helpIntro": "Ответы об установке и оплате.",
@@ -11895,7 +11977,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Сменить камеру",
     "navLabel": "Навигация",
     "browserLanguage": "Язык браузера",
-    "languageLabel": "Язык"
+    "languageLabel": "Язык",
+    "authScanTitle": "Сканировать QR входа Pi",
+    "authScanHelp": "Сканируйте QR входа Pi в настольном приложении, затем подтвердите совпадающий код и свой аккаунт.",
+    "authInvalidQR": "Это недействительный QR входа для этого сайта.",
+    "authFoundQR": "Ссылка для входа найдена",
+    "authContinue": "Перейти к подтверждению аккаунта",
+    "returnHome": "На главную"
   },
   "es": {
     "diagnosticsTitle": "Diagnóstico de conexión Pi",
@@ -11947,9 +12035,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Empieza fácil. Sigue creciendo.",
     "refresh": "Actualizar",
     "priceNote": "Precios y duraciones proceden del servidor. El enlace de pago determina el importe final en Pi.",
-    "piTitle": "De la aplicación a tu cartera.",
-    "piBody": "Inicia sesión en la aplicación Windows, crea un enlace, escanea su QR y confirma en la página de pago.",
-    "piExplain": "Conectar Pi aquí no sustituye tu cuenta de correo de la aplicación.",
+    "piTitle": "Escanear QR de acceso con Pi",
+    "piBody": "Escanea el QR de acceso con Pi de la aplicación de escritorio y confirma el código coincidente y tu cuenta.",
+    "piExplain": "Escanea el QR de acceso con Pi de la aplicación de escritorio y confirma el código coincidente y tu cuenta.",
     "piLogin": "Conectar con Pi",
     "faqTitle": "Antes de empezar",
     "helpIntro": "Respuestas sobre instalación y pago.",
@@ -12021,7 +12109,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Cambiar cámara",
     "navLabel": "Navegación",
     "browserLanguage": "Idioma del navegador",
-    "languageLabel": "Idioma"
+    "languageLabel": "Idioma",
+    "authScanTitle": "Escanear QR de acceso con Pi",
+    "authScanHelp": "Escanea el QR de acceso con Pi de la aplicación de escritorio y confirma el código coincidente y tu cuenta.",
+    "authInvalidQR": "No es un QR de acceso válido para este sitio.",
+    "authFoundQR": "Enlace de acceso detectado",
+    "authContinue": "Continuar para confirmar la cuenta",
+    "returnHome": "Volver al inicio"
   },
   "zh-hans": {
     "diagnosticsTitle": "Pi 连接诊断",
@@ -12073,9 +12167,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "轻松开始，逐步扩展。",
     "refresh": "刷新",
     "priceNote": "价格和时长来自服务器，最终 Pi 金额以应用付款链接为准。",
-    "piTitle": "从应用到钱包。",
-    "piBody": "登录 Windows 应用并创建付款链接，扫描二维码后在付款页面确认。",
-    "piExplain": "在此连接 Pi 不会替代应用中的邮箱账户。",
+    "piTitle": "扫描Pi登录二维码",
+    "piBody": "扫描桌面应用中的Pi登录二维码，然后确认匹配的验证码和您的账户。",
+    "piExplain": "扫描桌面应用中的Pi登录二维码，然后确认匹配的验证码和您的账户。",
     "piLogin": "连接 Pi",
     "faqTitle": "开始之前",
     "helpIntro": "有关安装和付款的解答。",
@@ -12147,7 +12241,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "切换摄像头",
     "navLabel": "导航",
     "browserLanguage": "浏览器语言",
-    "languageLabel": "语言"
+    "languageLabel": "语言",
+    "authScanTitle": "扫描Pi登录二维码",
+    "authScanHelp": "扫描桌面应用中的Pi登录二维码，然后确认匹配的验证码和您的账户。",
+    "authInvalidQR": "这不是本网站的有效登录二维码。",
+    "authFoundQR": "已识别登录链接",
+    "authContinue": "继续确认账户",
+    "returnHome": "返回首页"
   },
   "de": {
     "diagnosticsTitle": "Pi-Verbindungsdiagnose",
@@ -12199,9 +12299,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Einfach starten. Weiter wachsen.",
     "refresh": "Aktualisieren",
     "priceNote": "Preise und Laufzeiten kommen vom Server. Der Zahlungslink bestimmt den endgültigen Pi-Betrag.",
-    "piTitle": "Von der App zur Wallet.",
-    "piBody": "Melde dich in der Windows-App an und erstelle einen Zahlungslink. Scanne ihn und bestätige auf der Zahlungsseite.",
-    "piExplain": "Die Pi-Verbindung ersetzt nicht dein E-Mail-Konto in der App.",
+    "piTitle": "Pi-Anmeldecode scannen",
+    "piBody": "Scannen Sie den Pi-Anmeldecode der Desktop-App und bestätigen Sie den übereinstimmenden Code und Ihr Konto.",
+    "piExplain": "Scannen Sie den Pi-Anmeldecode der Desktop-App und bestätigen Sie den übereinstimmenden Code und Ihr Konto.",
     "piLogin": "Mit Pi verbinden",
     "faqTitle": "Vor dem Start",
     "helpIntro": "Antworten zu Installation und Zahlung.",
@@ -12273,7 +12373,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Kamera wechseln",
     "navLabel": "Navigation",
     "browserLanguage": "Browsersprache",
-    "languageLabel": "Sprache"
+    "languageLabel": "Sprache",
+    "authScanTitle": "Pi-Anmeldecode scannen",
+    "authScanHelp": "Scannen Sie den Pi-Anmeldecode der Desktop-App und bestätigen Sie den übereinstimmenden Code und Ihr Konto.",
+    "authInvalidQR": "Kein gültiger Anmeldecode für diese Website.",
+    "authFoundQR": "Anmeldelink erkannt",
+    "authContinue": "Weiter zur Kontobestätigung",
+    "returnHome": "Zur Startseite"
   },
   "ja": {
     "diagnosticsTitle": "Pi 接続の診断",
@@ -12325,9 +12431,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "簡単に始めて、広げよう。",
     "refresh": "更新",
     "priceNote": "料金と期間はサーバーから取得します。最終的な Pi 金額は決済リンクで決まります。",
-    "piTitle": "アプリからウォレットへ。",
-    "piBody": "Windows アプリでログインし決済リンクを作成。QR を読み取り、決済ページで確認してください。",
-    "piExplain": "ここでの Pi 接続は、アプリのメールアカウントの代わりにはなりません。",
+    "piTitle": "PiログインQRをスキャン",
+    "piBody": "デスクトップアプリのPiログインQRをスキャンし、一致するコードとご自身のアカウントを確認してください。",
+    "piExplain": "デスクトップアプリのPiログインQRをスキャンし、一致するコードとご自身のアカウントを確認してください。",
     "piLogin": "Pi に接続",
     "faqTitle": "始める前に",
     "helpIntro": "インストールと決済について。",
@@ -12399,7 +12505,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "カメラを切り替え",
     "navLabel": "ナビゲーション",
     "browserLanguage": "ブラウザーの言語",
-    "languageLabel": "言語"
+    "languageLabel": "言語",
+    "authScanTitle": "PiログインQRをスキャン",
+    "authScanHelp": "デスクトップアプリのPiログインQRをスキャンし、一致するコードとご自身のアカウントを確認してください。",
+    "authInvalidQR": "このサイトの有効なログインQRではありません。",
+    "authFoundQR": "ログインリンクを検出しました",
+    "authContinue": "アカウントの確認へ進む",
+    "returnHome": "ホームへ戻る"
   },
   "it": {
     "diagnosticsTitle": "Diagnostica connessione Pi",
@@ -12451,9 +12563,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "Un inizio semplice. Spazio per crescere.",
     "refresh": "Aggiorna",
     "priceNote": "Prezzi e durate arrivano dal server. Il link determina l’importo finale in Pi.",
-    "piTitle": "Dall’app al portafoglio.",
-    "piBody": "Accedi all’app Windows, crea il link, scansiona il QR e conferma nella pagina di pagamento.",
-    "piExplain": "Connettere Pi qui non sostituisce l’account e-mail dell’app.",
+    "piTitle": "Scansiona il QR di accesso Pi",
+    "piBody": "Scansiona il QR di accesso Pi dell’app desktop, poi conferma il codice corrispondente e il tuo account.",
+    "piExplain": "Scansiona il QR di accesso Pi dell’app desktop, poi conferma il codice corrispondente e il tuo account.",
     "piLogin": "Connetti a Pi",
     "faqTitle": "Prima di iniziare",
     "helpIntro": "Risposte su installazione e pagamento.",
@@ -12525,7 +12637,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "Cambia fotocamera",
     "navLabel": "Navigazione",
     "browserLanguage": "Lingua del browser",
-    "languageLabel": "Lingua"
+    "languageLabel": "Lingua",
+    "authScanTitle": "Scansiona il QR di accesso Pi",
+    "authScanHelp": "Scansiona il QR di accesso Pi dell’app desktop, poi conferma il codice corrispondente e il tuo account.",
+    "authInvalidQR": "Questo non è un QR di accesso valido per il sito.",
+    "authFoundQR": "Link di accesso rilevato",
+    "authContinue": "Continua alla conferma dell’account",
+    "returnHome": "Torna alla home"
   },
   "ar": {
     "diagnosticsTitle": "تشخيص اتصال Pi",
@@ -12577,9 +12695,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "بداية بسيطة ومساحة للنمو.",
     "refresh": "تحديث",
     "priceNote": "الأسعار والمدد من الخادم؛ المبلغ النهائي لـ Pi في رابط دفع التطبيق.",
-    "piTitle": "من تطبيقك إلى محفظتك.",
-    "piBody": "سجّل دخولك في تطبيق Windows وأنشئ رابط دفع، ثم امسح رمزه وأكّد في صفحة الدفع.",
-    "piExplain": "اتصال Pi هنا لا يستبدل حساب البريد الإلكتروني في التطبيق.",
+    "piTitle": "مسح رمز تسجيل الدخول عبر Pi",
+    "piBody": "امسح رمز تسجيل الدخول عبر Pi من تطبيق سطح المكتب، ثم أكد تطابق الرمز وحسابك.",
+    "piExplain": "امسح رمز تسجيل الدخول عبر Pi من تطبيق سطح المكتب، ثم أكد تطابق الرمز وحسابك.",
     "piLogin": "الاتصال بـ Pi",
     "faqTitle": "قبل البدء",
     "helpIntro": "إجابات حول التثبيت والدفع.",
@@ -12651,7 +12769,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "تبديل الكاميرا",
     "navLabel": "التنقل",
     "browserLanguage": "لغة المتصفح",
-    "languageLabel": "اللغة"
+    "languageLabel": "اللغة",
+    "authScanTitle": "مسح رمز تسجيل الدخول عبر Pi",
+    "authScanHelp": "امسح رمز تسجيل الدخول عبر Pi من تطبيق سطح المكتب، ثم أكد تطابق الرمز وحسابك.",
+    "authInvalidQR": "هذا ليس رمز تسجيل دخول صالحاً لهذا الموقع.",
+    "authFoundQR": "تم التعرف على رابط الدخول",
+    "authContinue": "المتابعة لتأكيد الحساب",
+    "returnHome": "العودة إلى الرئيسية"
   },
   "zh-hant": {
     "diagnosticsTitle": "Pi 連接診斷",
@@ -12703,9 +12827,9 @@ window.FOP_HOME_TEXT = {
     "plansTitle": "輕鬆開始，逐步擴展。",
     "refresh": "刷新",
     "priceNote": "價格和時長來自服務器，最終 Pi 金額以應用付款鏈接爲準。",
-    "piTitle": "從應用到錢包。",
-    "piBody": "登錄 Windows 應用並創建付款鏈接，掃描二維碼後在付款頁面確認。",
-    "piExplain": "在此連接 Pi 不會替代應用中的郵箱賬戶。",
+    "piTitle": "掃描Pi登入QR碼",
+    "piBody": "掃描桌面應用程式中的Pi登入QR碼，然後確認相符的驗證碼和您的帳戶。",
+    "piExplain": "掃描桌面應用程式中的Pi登入QR碼，然後確認相符的驗證碼和您的帳戶。",
     "piLogin": "連接 Pi",
     "faqTitle": "開始之前",
     "helpIntro": "有關安裝和付款的解答。",
@@ -12777,7 +12901,13 @@ window.FOP_HOME_TEXT = {
     "switchLabel": "切換攝像頭",
     "navLabel": "導航",
     "browserLanguage": "瀏覽器語言",
-    "languageLabel": "語言"
+    "languageLabel": "語言",
+    "authScanTitle": "掃描Pi登入QR碼",
+    "authScanHelp": "掃描桌面應用程式中的Pi登入QR碼，然後確認相符的驗證碼和您的帳戶。",
+    "authInvalidQR": "這不是本網站的有效登入QR碼。",
+    "authFoundQR": "已辨識登入連結",
+    "authContinue": "繼續確認帳戶",
+    "returnHome": "返回首頁"
   }
 };
 
@@ -12804,7 +12934,8 @@ window.FOP_HOME_TEXT = {
   let choice = locale.choice(readPref('fop-home-language'), new URLSearchParams(location.search).get('lang'));
   let language = locale.resolve(choice, browserLanguages());
   $('language').replaceChildren(...[['auto',''], ...Object.entries(locale.names)].map(([value,label]) => { const o=document.createElement('option');o.value=value;o.textContent=label;return o; }));
-  let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false, sdkPromise;
+  let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false;
+  let scannerMode = 'payment';
   let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
   let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'cameraHint', scannerError = false, piMessage = 'piExplain';
   const paths = {
@@ -12829,7 +12960,7 @@ window.FOP_HOME_TEXT = {
     const p = document.createElementNS(svg.namespaceURI,'path'); p.setAttribute('d',paths[el.dataset.icon] || paths.folder); svg.append(p); el.append(svg);
   });
   const number = n => new Intl.NumberFormat(language,{maximumFractionDigits:7}).format(n);
-  function scanStatus(key, error = false) { scannerMessage = key; scannerError = error; $('scanStatus').textContent = T[key]; $('scanStatus').classList.toggle('error',error); }
+  function scanStatus(key, error = false) { if(scannerMode==='auth')key=({invalidQR:'authInvalidQR',foundQR:'authFoundQR'})[key]||key; scannerMessage = key; scannerError = error; $('scanStatus').textContent = T[key]; $('scanStatus').classList.toggle('error',error); }
   function piStatus(key, error = false) { piMessage = key; $('piStatus').textContent = T[key]; $('piStatus').classList.toggle('error',error); }
   function applyLanguage() {
     for(const id of ['privacyStatus','piDebugState']){const el=$(id);if(el){const key=Object.keys(T).find(k=>T[k]===el.textContent);if(key)el.textContent=text[language][key];}}
@@ -12847,10 +12978,26 @@ window.FOP_HOME_TEXT = {
     document.title = 'FileOrganizerCore — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
     $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
-    renderPi(); renderSelected();
+    renderPi(); renderSelected(); renderScannerMode();
   }
-  function renderSelected() { $('selectedPlan').textContent = selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
-  function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+piUsername : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
+  function renderSelected() { $('selectedPlan').textContent = scannerMode==='auth' ? T.authScanHelp : selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
+  function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+String.fromCharCode(0x2068)+piUsername+String.fromCharCode(0x2069) : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
+  function restorePiDisplay() {
+    // Display-only, per-tab handoff from a successful server approval, never an auth credential.
+    try {
+      const saved=JSON.parse(sessionStorage.getItem('foc-pi-display')||'null');
+      if(saved && typeof saved.username==='string' && saved.username.length<=128 && saved.network===(cfg.PI_SANDBOX===true?'testnet':'mainnet') && saved.expires>Date.now() && saved.expires<=Date.now()+16*60*1000)piUsername=saved.username;
+      else {sessionStorage.removeItem('foc-pi-display');piUsername='';}
+    }catch{piUsername='';}
+    renderPi();
+  }
+  window.addEventListener('pageshow',restorePiDisplay);
+  function renderScannerMode() {
+    const auth=scannerMode==='auth';
+    for(const [id,key] of [['scannerTitle',auth?'authScanTitle':'scanTitle'],['scannerStep',auth?'piLogin':'scanStep'],['scannerManual',auth?'authScanTitle':'manual'],['scannerFound',auth?'authFoundQR':'validLink'],['scannerConfirm',auth?'authScanHelp':'confirmInfo'],['openPayment',auth?'authContinue':'continue']])$(id).textContent=T[key];
+    $('paymentLink').placeholder=auth?'https://…/pi-login.html#…':'https://…/checkout.html?token=…';
+    renderSelected();
+  }
   function applyTheme(value) { document.body.dataset.theme = value; $('theme').setAttribute('aria-pressed',String(value === 'light')); }
   const browserTheme = matchMedia('(prefers-color-scheme:dark)');
   let manualTheme = ['light','dark'].includes(readPref('fop-home-theme')) ? readPref('fop-home-theme') : null;
@@ -12916,7 +13063,8 @@ window.FOP_HOME_TEXT = {
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
     requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
   }
-  function openScanner(plan='') {
+  function openScanner(plan='',mode='payment') {
+    scannerMode=mode;if(mode==='auth')trace('PI_AUTH_SCANNER_OPENED');renderScannerMode();
     selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('cameraHint');
     $('scanner').showModal();document.body.classList.add('modal-open');startCamera();
   }
@@ -12928,7 +13076,7 @@ window.FOP_HOME_TEXT = {
   document.addEventListener('visibilitychange',()=>{if(document.hidden){const active=!!stream||requestingCamera;stopCamera();if(active)scanStatus('cameraStopped');}});
   window.addEventListener('pagehide',stopCamera);
   function acceptLink(raw) {
-    clearResult();const url=policy.checkoutLink(raw,location.href,cfg.CHECKOUT_URL);
+    clearResult();const url=scannerMode==='auth'?policy.authLink(raw,location.href):policy.checkoutLink(raw,location.href,cfg.CHECKOUT_URL);
     if(!url){scanStatus('invalidQR',true);return false;}
     stopCamera();resultURL=url;$('resultHost').textContent=url.host+url.pathname;$('scanResult').hidden=false;scanStatus('foundQR');$('openPayment').focus();return true;
   }
@@ -12936,8 +13084,13 @@ window.FOP_HOME_TEXT = {
   $('paymentLink').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('checkLink').click();}});
   $('paymentLink').addEventListener('input',clearResult);
   $('openPayment').onclick=()=>{
-    if(!resultURL)return;const safe=policy.checkoutLink(resultURL.href,location.href,cfg.CHECKOUT_URL);if(!safe)return;
-    if(!safe.searchParams.has('lang'))safe.searchParams.set('lang',language);
+    if(!resultURL)return;const safe=scannerMode==='auth'?policy.authLink(resultURL.href,location.href):policy.checkoutLink(resultURL.href,location.href,cfg.CHECKOUT_URL);if(!safe)return;
+    if(scannerMode==='auth') {
+      const [secret,params]=safe.hash.slice(1).split('?'), q=new URLSearchParams(params||'');
+      if(!q.has('lang'))q.set('lang',language);
+      if(!q.has('theme'))q.set('theme',document.body.dataset.theme);
+      safe.hash=secret+'?'+q.toString();
+    } else if(!safe.searchParams.has('lang'))safe.searchParams.set('lang',language);
     stopCamera();location.assign(safe.href);
   };
   const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d',{willReadFrequently:true});
@@ -12985,29 +13138,15 @@ window.FOP_HOME_TEXT = {
     }catch{if(ticket===epoch)scanStatus('imageError',true);}
     finally{if(objectURL)URL.revokeObjectURL(objectURL);$('qrImage').value='';}
   };
-  function loadPiSDK() {
-    if(window.Pi)return Promise.resolve();if(sdkPromise)return sdkPromise;
-    sdkPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src='https://sdk.minepi.com/pi-sdk.js';script.async=true;
-      const timeout=setTimeout(()=>{script.remove();reject(Error());},15000);
-      script.onload=()=>{clearTimeout(timeout);window.Pi?resolve():reject(Error());};script.onerror=()=>{clearTimeout(timeout);script.remove();reject(Error());};document.head.append(script);
-    }).catch(error=>{sdkPromise=null;throw error;});return sdkPromise;
-  }
-  $('piAuth').onclick=async()=>{
-    if(piBusy)return;
-    if(piUsername){piUsername='';renderPi();piStatus('piExplain');return;}
-    piBusy=true;renderPi();piStatus('piBusy');trace('PI_CONNECT_REQUEST');
-    try{await loadPiSDK();trace('PI_SDK_LOADED');await window.Pi.init({version:'2.0',sandbox:cfg.PI_SANDBOX===true});
-      trace('PI_AUTH_STARTED');const auth=await window.Pi.authenticate(['username'],()=>{});
-      if(!auth?.user?.username)throw Error();piUsername=String(auth.user.username);piStatus('piExplain');trace('PI_AUTH_SUCCESS');
-    }catch{piStatus('piFailed',true);trace('PI_AUTH_FAILED');}
-    finally{piBusy=false;renderPi();}
+  $('piAuth').onclick=()=>{
+    if(piUsername){piUsername='';try{sessionStorage.removeItem('foc-pi-display')}catch{}renderPi();piStatus('piExplain');return;}
+    openScanner('', 'auth');
   };
   $('privacy').onclick=()=>{$('privacyDialog').showModal();document.body.classList.add('modal-open');};
   $('closePrivacy').onclick=()=>$('privacyDialog').close();
   $('privacyDialog').addEventListener('close',()=>document.body.classList.remove('modal-open'));
   $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
-  applyLanguage();loadPlans();
+  applyLanguage();restorePiDisplay();loadPlans();
 })();
 
 ;

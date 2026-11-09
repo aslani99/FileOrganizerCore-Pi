@@ -24,6 +24,22 @@
     if (lang && !/^[a-zA-Z]{2,3}(?:-[a-zA-Z]{2,8})?$/.test(lang)) return null;
     return url;
   }
+  function authLink(raw, base) {
+    if (typeof raw !== 'string' || raw.length > 2048) return null;
+    let u, home; try { u = new URL(raw.trim()); home = new URL(base); } catch { return null; }
+    // Login secrets must never be forwarded to another origin or an arbitrary path.
+    if (u.protocol !== 'https:' || u.origin !== home.origin || u.username || u.password || u.search) return null;
+    const target = new URL('pi-login.html', home);
+    if (![target.pathname, target.pathname.replace(/\.html$/, '')].includes(u.pathname)) return null;
+    const fragment = u.hash.slice(1).split('?');
+    if (fragment.length > 2 || !/^[a-f0-9]{64}$/.test(fragment[0])) return null;
+    const q = new URLSearchParams(fragment[1] || '');
+    if ([...q.keys()].some(k => !['lang','theme'].includes(k)) || q.getAll('lang').length > 1 || q.getAll('theme').length > 1) return null;
+    if (q.has('lang') && !/^[a-zA-Z]{2,3}(?:-[a-zA-Z]{2,8})?$/.test(q.get('lang'))) return null;
+    if (q.has('theme') && !['light','dark'].includes(q.get('theme'))) return null;
+    u.pathname = target.pathname;
+    return u;
+  }
   function downloadLink(raw) {
     try { const u = new URL(raw); return u.protocol === 'https:' && !u.username && !u.password ? u.href : null; } catch { return null; }
   }
@@ -45,7 +61,7 @@
       seen.add(p.plan_id); return true;
     }).sort((a,b) => ['free','pro','max'].indexOf(a.plan_id) - ['free','pro','max'].indexOf(b.plan_id));
   }
-  const api = {checkoutLink, downloadLink, freshPi, validPlans};
+  const api = {authLink, checkoutLink, downloadLink, freshPi, validPlans};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FOP_HOME_POLICY = api;
 })(typeof window !== 'undefined' ? window : globalThis);

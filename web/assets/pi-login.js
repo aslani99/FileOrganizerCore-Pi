@@ -39,6 +39,7 @@
   $('match').disabled=busy||done||expired||!challenge;
   $('status').textContent=statusKey?t(statusKey):'';$('status').hidden=!statusKey;$('status').dataset.tone=done?'success':'error';
   $('account').hidden=!done||!username;$('accountLabel').textContent=t('account');$('accountName').textContent=username;
+  $('returnHome').hidden=!done;$('returnHome').textContent=t('return_home');
   $('agreement').hidden=done;$('approve').hidden=done;$('challengePanel').hidden=done;
  }
  function tick(){
@@ -54,7 +55,10 @@
   const r=await response.json();if(!response.ok)throw new Error(r.error||'error');
   return {data:r,elapsed:performance.now()-started};
  }
- function approved(r){done=true;expired=false;username=r.username||'';statusKey='browser_done';clearInterval(timer)}
+ function approved(r){
+  done=true;expired=false;username=r.username||'';statusKey='browser_done';clearInterval(timer);
+  if(username && username.length<=128)try{sessionStorage.setItem('foc-pi-display',JSON.stringify({username,network:cfg.PI_SANDBOX===true?'testnet':'mainnet',expires:Date.now()+15*60*1000}))}catch{}
+ }
  function error(e){statusKey=({expired:'expired',not_configured:'unavailable',identity_conflict:'conflict'})[e.message]||'error';if(e.message==='expired')expired=true;render()}
  $('approve').addEventListener('click',async()=>{
   if(busy||done||expired||!challenge||!$('match').checked)return;
