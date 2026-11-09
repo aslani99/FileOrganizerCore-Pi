@@ -21,6 +21,7 @@
   $('language').replaceChildren(...[['auto',''], ...Object.entries(locale.names)].map(([value,label]) => { const o=document.createElement('option');o.value=value;o.textContent=label;return o; }));
   let T = text[language], currentPlans = [], selectedPlan = '', piUsername = '', piBusy = false;
   let scannerMode = 'payment';
+  let cameras=[],activeCameraId='',preferredCameraId=readPref('foc-camera-id')||'';
   let requestingCamera = false, stream = null, scanTimer = null, epoch = 0, facing = 'environment', torchOn = false, resultURL = null;
   let plansController = null, plansGeneration = 0, plansState = 'loading', scannerMessage = 'cameraHint', scannerError = false, piMessage = 'piExplain';
   const paths = {
@@ -63,7 +64,7 @@
     document.title = 'FileOrganizerCore — ' + T.eyebrow;
     renderPlans(); wireDownload(); scanStatus(scannerMessage,scannerError); piStatus(piMessage,$('piStatus').classList.contains('error'));
     $('stopCamera').textContent=(stream||requestingCamera)?T.cameraStop:T.cameraStart;
-    renderPi(); renderSelected(); renderScannerMode();
+    renderPi(); renderSelected(); renderScannerMode(); renderCameras();
   }
   function renderSelected() { $('selectedPlan').textContent = scannerMode==='auth' ? T.authScanHelp : selectedPlan ? T.selected+' '+T[selectedPlan]+'. '+T.selectNote : T.selectNote; }
   function renderPi() { $('piUser').hidden = !piUsername; $('piUser').textContent = piUsername ? T.piConnected+' '+String.fromCharCode(0x2068)+piUsername+String.fromCharCode(0x2069) : ''; $('piAuth').textContent = piUsername ? T.disconnect : T.piLogin; $('piAuth').disabled = piBusy; }
@@ -146,7 +147,7 @@
     epoch++;clearTimeout(scanTimer);scanTimer=null;
     if(stream)stream.getTracks().forEach(track=>track.stop());stream=null;
     $('camera').srcObject=null;$('cameraPlaceholder').hidden=false;
-    requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
+    requestingCamera=false;$('cameraChoice').disabled=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;$('switchCamera').hidden=true;$('torch').hidden=true;torchOn=false;
   }
   function openScanner(plan='',mode='payment') {
     scannerMode=mode;if(mode==='auth')trace('PI_AUTH_SCANNER_OPENED');renderScannerMode();
@@ -185,28 +186,86 @@
     ctx.drawImage(source,0,0,canvas.width,canvas.height);const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
     return window.jsQR(pixels.data,pixels.width,pixels.height,{inversionAttempts:'attemptBoth'})?.data || null;
   }
-  async function startCamera() {
+  function renderCameras() {
+    const selected=activeCameraId||preferredCameraId;
+    $('cameraChoice').replaceChildren(...cameras.map((d,i)=>{
+      const o=document.createElement('option');o.value=d.deviceId;
+      o.textContent=number(i+1)+' — '+(d.label||T.switchLabel);return o;
+    }));
+    $('cameraChoice').value=selected;
+    $('cameraChoice').setAttribute('aria-label',T.switchLabel);
+    $('cameraChoiceLabel').textContent=T.switchLabel;
+    $('cameraPicker').hidden=cameras.length<2;
+    $('cameraChoice').disabled=requestingCamera;
+  }
+  async function listCameras(ticket) {
+    try {
+      const list=await navigator.mediaDevices.enumerateDevices();
+      if(ticket!==epoch)return;
+      cameras=list.filter(d=>d.kind==='videoinput'&&d.deviceId);renderCameras();
+    }catch{} // Permission/older browser restrictions must not prevent an available camera working.
+  }
+  async function startCamera(deviceId='') {
     stopCamera();clearResult();const ticket=epoch;
     if(!isSecureContext||!navigator.mediaDevices?.getUserMedia){scanStatus('cameraUnsupported',true);return;}
     if(!window.jsQR||!ctx){scanStatus('readerMissing',true);return;}
-    requestingCamera=true;$('stopCamera').textContent=T.cameraStop;scanStatus('cameraRequest');
+    requestingCamera=true;renderCameras();$('stopCamera').textContent=T.cameraStop;scanStatus('cameraRequest');
+    const stale=()=>ticket!==epoch||!$('scanner').open||document.hidden;
+    async function acquire(id) {
+      const video={width:{ideal:1920},height:{ideal:1080},frameRate:{ideal:24,max:30}};
+      if(id)video.deviceId={exact:id};else video.facingMode={ideal:facing};
+      const received=await navigator.mediaDevices.getUserMedia({audio:false,video});
+      if(stale()){received.getTracks().forEach(t=>t.stop());return false;}
+      stream=received;return true;
+    }
     try {
-      const received=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:facing},width:{ideal:1280},height:{ideal:720}}});
-      if(ticket!==epoch||!$('scanner').open||document.hidden){received.getTracks().forEach(t=>t.stop());return;}
-      stream=received;$('camera').srcObject=stream;await $('camera').play();
-      if(ticket!==epoch)return;
-      $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStop;$('switchCamera').hidden=false;
-      const track=stream.getVideoTracks()[0];$('torch').hidden=!track.getCapabilities?.().torch;scanStatus('cameraScanning');
+      const requested=deviceId||preferredCameraId;
+      try {if(!await acquire(requested))return;}
+      catch(e) {
+        if(stale())return;
+        if(!requested||!['NotFoundError','OverconstrainedError'].includes(e.name))throw e;
+        preferredCameraId='';writePref('foc-camera-id','');
+        if(!await acquire(''))return;
+      }
+      // Permission reveals labels/device IDs. Replace a default ultra-wide with an identifiable main rear lens.
+      await listCameras(ticket);if(stale())return;
+      let track=stream.getVideoTracks()[0];
+      activeCameraId=track.getSettings?.().deviceId||'';
+      const best=deviceId?activeCameraId:policy.preferredCamera(cameras,activeCameraId,preferredCameraId);
+      if(best&&best!==activeCameraId){
+        const previousId=activeCameraId;
+        stream.getTracks().forEach(t=>t.stop());stream=null;
+        try{if(!await acquire(best))return;}
+        catch(e){if(stale())return;if(!await acquire(previousId))return;}
+        track=stream.getVideoTracks()[0];activeCameraId=track.getSettings?.().deviceId||'';
+      }
+      if(stale())return;
+      if(deviceId&&activeCameraId===deviceId){preferredCameraId=deviceId;writePref('foc-camera-id',deviceId);}
+      // Unsupported focus/zoom constraints are optional; never fail a usable camera on them.
+      let capabilities={};try{capabilities=track.getCapabilities?.()||{};}catch{}
+      for(const setting of [capabilities.focusMode?.includes('continuous')?{focusMode:'continuous'}:null,
+          capabilities.zoom&&capabilities.zoom.min<=1&&capabilities.zoom.max>=1?{zoom:1}:null]){
+        if(setting)try{await track.applyConstraints({advanced:[setting]});}catch{}
+        if(stale())return;
+      }
+      $('camera').srcObject=stream;await $('camera').play();if(stale())return;
+      $('cameraPlaceholder').hidden=true;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStop;
+      $('switchCamera').hidden=false;$('torch').hidden=!capabilities.torch;scanStatus('cameraScanning');
       const tick=()=>{
-        if(ticket!==epoch||!stream||!$('scanner').open)return;
-        try { if($('camera').readyState>=2&&$('camera').videoWidth){const code=decode($('camera'),$('camera').videoWidth,$('camera').videoHeight);if(code&&acceptLink(code))return;} }
-        catch {stopCamera();scanStatus('readerMissing',true);return;}
+        if(stale()||!stream)return;
+        try {if($('camera').readyState>=2&&$('camera').videoWidth){const code=decode($('camera'),$('camera').videoWidth,$('camera').videoHeight,1600);if(code&&acceptLink(code))return;}}
+        catch{stopCamera();scanStatus('readerMissing',true);return;}
         scanTimer=setTimeout(tick,250);
       };tick();
     }catch(error){if(ticket===epoch){stopCamera();scanStatus(['NotAllowedError','SecurityError'].includes(error.name)?'cameraDenied':'cameraMissing',true);}}
-    finally{if(ticket===epoch)requestingCamera=false;}
+    finally{if(ticket===epoch){requestingCamera=false;renderCameras();}}
   }
-  $('switchCamera').onclick=()=>{facing=facing==='environment'?'user':'environment';startCamera();};
+  $('cameraChoice').onchange=()=>{const id=$('cameraChoice').value;if(id)startCamera(id);};
+  $('switchCamera').onclick=()=>{
+    if(requestingCamera)return;
+    if(cameras.length>1){const i=cameras.findIndex(d=>d.deviceId===activeCameraId);startCamera(cameras[(i+1)%cameras.length].deviceId);}
+    else{preferredCameraId='';facing=facing==='environment'?'user':'environment';startCamera();}
+  };
   $('torch').onclick=async()=>{try{const track=stream?.getVideoTracks()[0];if(!track)return;await track.applyConstraints({advanced:[{torch:!torchOn}]});torchOn=!torchOn;$('torch').setAttribute('aria-pressed',String(torchOn));}catch{scanStatus('torchFailed',true);}};
   $('qrImage').onchange=async()=>{
     const file=$('qrImage').files[0];if(!file)return;stopCamera();clearResult();const ticket=epoch;scanStatus('imageReading');
@@ -230,6 +289,6 @@
   $('privacy').onclick=()=>{$('privacyDialog').showModal();document.body.classList.add('modal-open');};
   $('closePrivacy').onclick=()=>$('privacyDialog').close();
   $('privacyDialog').addEventListener('close',()=>document.body.classList.remove('modal-open'));
-  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');}catch{}choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
+  $('clearPrefs').onclick=()=>{try{localStorage.removeItem('fop-home-language');localStorage.removeItem('fop-home-theme');localStorage.removeItem('foc-camera-id');}catch{}preferredCameraId='';choice='auto';language=locale.resolve(choice,browserLanguages());manualTheme=null;applyTheme(systemTheme());applyLanguage();$('privacyStatus').textContent=T.prefsCleared;};
   applyLanguage();restorePiDisplay();loadPlans();
 })();

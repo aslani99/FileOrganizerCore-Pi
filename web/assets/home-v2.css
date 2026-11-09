@@ -40,3 +40,5 @@ header .tools>[data-scan]{order:0;}
  header .tools>.button{font-size:11px;line-height:1.1;padding-inline:5px;}
  header .pi-shortcut{width:80px;min-width:80px;max-width:80px;white-space:normal;overflow-wrap:anywhere;}
 }
+
+.camera-picker{display:grid;gap:6px;margin:12px 0;min-width:0}.camera-picker[hidden]{display:none}.camera-picker select{width:100%;min-width:0;max-width:100%;padding:10px;border:1px solid var(--focus);border-radius:10px;background:var(--panel);color:var(--text)}

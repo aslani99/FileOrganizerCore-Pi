@@ -40,6 +40,22 @@
     u.pathname = target.pathname;
     return u;
   }
+  function cameraRank(label) {
+    const name=String(label||'').toLowerCase();
+    // Labels are hints, not a portable lens-type API. Ordinary "wide" often IS the main camera.
+    if (/front|user|selfie|facetime|前置|جلو|أمام/.test(name)) return -100;
+    if (/ultra[ -]?wide|ultra[ -]?angle|0[.,]5|0[.,]6|超广|فوق.*عریض|فائق/.test(name)) return -60;
+    if (/telephoto|tele camera|macro|depth|infrared/.test(name)) return -40;
+    return (/back|rear|environment|پشت|خلف|后置|後置/.test(name)?20:0)+(/main|primary|standard|1[x×]|اصلی|رئيس|主摄/.test(name)?40:0);
+  }
+  function preferredCamera(devices, currentId, savedId) {
+    const cameras=devices.filter(d=>d.kind==='videoinput' && d.deviceId);
+    const saved=cameras.find(d=>d.deviceId===savedId);if(saved)return saved.deviceId;
+    const current=cameras.find(d=>d.deviceId===currentId);
+    const best=cameras.reduce((a,d)=>!a||cameraRank(d.label)>cameraRank(a.label)?d:a,null);
+    // Keep the browser's rear choice when labels provide no better evidence.
+    return best && (!current || cameraRank(best.label)>cameraRank(current.label)) ? best.deviceId : currentId;
+  }
   function downloadLink(raw) {
     try { const u = new URL(raw); return u.protocol === 'https:' && !u.username && !u.password ? u.href : null; } catch { return null; }
   }
@@ -61,7 +77,7 @@
       seen.add(p.plan_id); return true;
     }).sort((a,b) => ['free','pro','max'].indexOf(a.plan_id) - ['free','pro','max'].indexOf(b.plan_id));
   }
-  const api = {authLink, checkoutLink, downloadLink, freshPi, validPlans};
+  const api = {cameraRank, preferredCamera, authLink, checkoutLink, downloadLink, freshPi, validPlans};
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.FOP_HOME_POLICY = api;
 })(typeof window !== 'undefined' ? window : globalThis);
