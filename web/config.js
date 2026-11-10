@@ -6,5 +6,5 @@ window.FOP_CONFIG = Object.freeze({
   SUPABASE_URL: "https://mjkjmwgjtnuvnedvtgqo.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_ZAAeiRgkF8U2PcfcqvAbtQ_EGqjle5Y",
   // Set to the real HTTPS release URL after publishing FileOrganizerCore-Setup.exe.
-  DOWNLOAD_URL: "",
+  DOWNLOAD_URL: "https://github.com/aslani99/FileOrganizerCore-Pi/releases/download/v-1.0.0/FileOrganizerCore-Setup.exe",
 });
