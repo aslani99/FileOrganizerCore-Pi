@@ -8,15 +8,18 @@
     (() => { const q = new URLSearchParams(location.hash.split('?')[1] || ''); const theme = q.get('theme');
       document.documentElement.dataset.theme = theme === 'dark' || theme === 'light' ? theme : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; })();
   </script>
-  <link rel="stylesheet" href="assets/pi-login.css?v=20261109">
+  <link rel="stylesheet" href="assets/pi-login.css?v=20261110-brand">
   <script defer src="config.js?v=20261109"></script>
   <script defer src="assets/pi-auth-i18n.js?v=20261109-auth-scan"></script>
   <script defer src="https://sdk.minepi.com/pi-sdk.js"></script>
   <script defer src="assets/pi-login.js?v=20261109-auth-scan"></script>
+<link rel="icon" href="assets/brand/favicon.ico?v=20261110">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<style>.foc-logo{width:36px;height:36px;object-fit:contain;flex:none;vertical-align:middle;border-radius:8px}.foc-brand{display:flex;align-items:center;gap:10px;direction:ltr}</style>
 </head>
 <body>
   <main>
-    <header><a class="brand" href="./" dir="ltr"><span>FileOrganizer</span><strong>Core</strong></a><select id="language" aria-label="Language"></select></header>
+    <header><a class="brand" href="./" dir="ltr"><img class="foc-logo" src="assets/brand/logo.png" alt="" width="36" height="36"><span>FileOrganizer</span><b><strong>Core</strong></b></a><select id="language" aria-label="Language"></select></header>
     <section class="intro"><div class="identity-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="4" y="3" width="16" height="18" rx="4"/><circle cx="12" cy="9" r="2.5"/><path d="M8 17c0-4 8-4 8 0"/></svg></div><h1 id="title"></h1><p id="browserNotice" role="note" hidden><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3 2 21h20L12 3Z"/><path d="M12 9v5m0 3v1"/></svg><span id="help"></span></p></section>
     <section class="challenge-panel" id="challengePanel" aria-busy="true">
       <output id="code" dir="ltr"><span class="spinner" id="codeSpinner" aria-hidden="true"></span><span id="codeValue"></span></output>

@@ -4,7 +4,7 @@ const fs=require('node:fs'),path=require('node:path'),assert=require('node:asser
 const root=path.resolve(__dirname,'../web'),host='https://fileorganizerpro.mohammadaslanidev.ir';
 const plans=[{plan_id:'free',price_usd:0,duration_days:30,organization_limit_bytes:9663676416},{plan_id:'pro',price_usd:1.99,duration_days:182,organization_limit_bytes:null,pi_amount:12,pi_rate_source:'coingecko',pi_rate_updated_at:new Date().toISOString()},{plan_id:'max',price_usd:8.99,duration_days:365,organization_limit_bytes:null}];
 (async()=>{
-const browser=await chromium.launch({args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
+const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||undefined,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
 let cases=0;
 for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const width of [320,390,1280]){
  const context=await browser.newContext({viewport:{width,height:900},permissions:['camera'],colorScheme:theme});
@@ -17,7 +17,7 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
   if(/\/(home-policy|home-locale|home-i18n|home-v2|jsQR-1\.4\.0)\.js$/.test(u.pathname))return route.fulfill({status:404,body:'Not found'});
   const local=path.join(root,u.pathname.replace(/^\/web\//,''));
   if(!local.startsWith(root)||!fs.existsSync(local))return route.abort();
-  return route.fulfill({body:fs.readFileSync(local),contentType:local.endsWith('.css')?'text/css':local.endsWith('.js')?'application/javascript':'text/html'});
+  return route.fulfill({body:fs.readFileSync(local),contentType:local.endsWith('.png')?'image/png':local.endsWith('.ico')?'image/x-icon':local.endsWith('.css')?'text/css':local.endsWith('.js')?'application/javascript':'text/html'});
  });
  await page.goto(host+'/web/index.html?lang='+language);
  await page.waitForSelector('.plan');
@@ -82,10 +82,7 @@ for(const language of ['fa','en'])for(const theme of ['light','dark'])for(const 
   await page.evaluate(()=>{delete document.hidden;});await page.locator('#closeScanner').click();
  }
  await page.locator('#piAuth').click();assert.equal(await page.locator('#scanner').evaluate(e=>e.open),true);assert.equal(await page.evaluate(()=>window.__authCalls||0),0);await page.locator('#closeScanner').click();
- const diagnostic=await page.locator('#piDebugLog').textContent();
- assert.ok(diagnostic.includes('PI_AUTH_SCANNER_OPENED'));assert.ok(!diagnostic.includes('test-pioneer'));assert.ok(!diagnostic.includes('token='));
- await page.locator('#piDebug summary').click();await page.locator('#piDebugClear').click();assert.equal(await page.locator('#piDebugLog').textContent(),'');
- await page.locator('#piDebug summary').click();
+ assert.equal(await page.locator('#piDebug').count(),0);
  assert.equal(await page.locator('#piUser').isVisible(),false);
  offline=true;await page.locator('#reloadPlans').click();await page.waitForFunction(()=>document.getElementById('plansStatus').classList.contains('error'));assert.equal(await page.locator('.plan').count(),0);
  offline=false;await page.locator('#reloadPlans').click();await page.waitForSelector('.plan');

@@ -8,7 +8,6 @@
   document.getElementById('summary-label').textContent = T.summary;
   document.getElementById('checkout-heading').textContent = T.heading;
   document.getElementById('browser-note').textContent = T.browserNote;
-  document.getElementById('diagnostics-title').textContent = T.diagnostics;
   document.title = 'FileOrganizerCore — ' + T.pay;
   function closePage(key) {
     clearTimeout(verificationTimer);
@@ -21,17 +20,6 @@
     if (code === 'payment_cancelled') { closePage('cancelled'); return; }
     show(code === 'network_error' ? T.network : code === 'request_timeout' ? T.timeout : T.error, true);
   }
-  const diagnosticRows = [];
-  function trace(code) {
-    // Only call with predefined stage codes; never log SDK payloads, tokens or raw errors.
-    diagnosticRows.push(new Date().toISOString().slice(11,19) + ' ' + code);
-    const panel = document.getElementById('payment-diagnostics');
-    if (panel) panel.textContent = diagnosticRows.slice(-35).join('\n');
-  }
-  window.addEventListener('error', () => trace('BROWSER_SCRIPT_ERROR'));
-  window.addEventListener('unhandledrejection', () => trace('UNHANDLED_ASYNC_ERROR'));
-  trace('CHECKOUT_STATUS_6');
-  trace(cfg?.PI_SANDBOX === true ? 'SDK_MODE_DESKTOP_SANDBOX' : 'SDK_MODE_PI_BROWSER');
   let verificationTimer, verificationToken = token, verificationWaiting = false;
   let busy = false, terminal = false, paymentInFlight = false, session, accessToken, recoveryPromise, incompleteSeen = false, incompletePayment;
   const show = (text, error = false) => {
@@ -53,7 +41,7 @@
     details.classList.remove('hidden');
   }
   async function request(name, body) {
-    trace('API_REQUEST_' + name.split('?')[0]);
+    
     let response;
     try { response = await fetch(cfg.SUPABASE_URL + '/functions/v1/' + name, {
       method: body ? 'POST' : 'GET', headers: {apikey: cfg.SUPABASE_ANON_KEY, ...(body ? {'Content-Type':'application/json'} : {})},
@@ -63,8 +51,8 @@
       throw Object.assign(new Error('request_failed'), {code:['TimeoutError','AbortError'].includes(error?.name)?'request_timeout':'network_error'});
     }
     const data = await response.json().catch(() => ({}));
-    trace(response.ok ? 'API_RESPONSE_OK' : 'API_RESPONSE_FAILED');
-    if (!response.ok) { trace('HTTP_' + response.status); throw Object.assign(new Error('request_failed'), {code:data.error}); }
+    
+    if (!response.ok) {  throw Object.assign(new Error('request_failed'), {code:data.error}); }
     return data;
   }
   async function loadSession() {
@@ -106,12 +94,12 @@
   function finish(data) {
     if (data.subscriptionPendingSync) { waitForVerification(); show(T.syncPending); return; }
     verificationWaiting = false; clearTimeout(verificationTimer);
-    trace(data.subscriptionPendingSync ? 'PAYMENT_SYNC_PENDING' : 'PAYMENT_COMPLETED');
+    
     terminal = true; button.disabled = true; button.classList.add('hidden');
     show(data.subscriptionPendingSync ? T.syncPending : T.success);
   }
   function recover(payment) {
-    trace('INCOMPLETE_PAYMENT_CALLBACK');
+    
     incompleteSeen = true;
     incompletePayment = payment;
     // Authentication can deliver this callback before its promise resolves.
@@ -121,7 +109,7 @@
   }
   async function reconcile(paymentId, allowReplacement = false) {
     if (recoveryPromise) return recoveryPromise;
-    trace('RECOVERY_STARTED');
+    
     show(T.checking);
     recoveryPromise = request('pi-complete', {recovery:true, sessionToken:token, ...(paymentId?{paymentId}:{}), accessToken})
       .then(result => {
@@ -132,7 +120,7 @@
           closePage('cancelled');
         } else { finish(result); }
       }).catch(error => {
-        trace('RECOVERY_FAILED');
+        
         waitForVerification();
         showError(error);
       }).finally(() => {
@@ -155,28 +143,28 @@
       if (session.status === 'completed') { finish(session); return; }
       if (!['pending','approved'].includes(session.status)) { terminal = true; closePage(session.status === 'cancelled' ? 'cancelled' : 'closed'); return; }
       if (!window.Pi) throw new Error('Open this link in Pi Browser.');
-      trace('SDK_INIT_STARTED');
+      
       await Pi.init({version:'2.0', sandbox:cfg.PI_SANDBOX === true});
-      trace('SDK_INIT_RESOLVED');
+      
       show(T.checking);
-      trace('AUTHENTICATE_CALLED');
+      
       // A slow wallet interaction must not be cancelled or followed by a second auth call.
       const waitingNotice = setTimeout(() => {
         if (!incompleteSeen && !terminal) {
-          trace('AUTHENTICATE_STILL_PENDING_15S');
+          
           show(T.follow);
         }
       }, 15000);
       let auth;
       try {
         const result = Pi.authenticate(['username','payments'], recover);
-        trace(result && typeof result.then === 'function' ? 'AUTHENTICATE_PROMISE_RETURNED' : 'AUTHENTICATE_NO_PROMISE');
+        
         auth = await result;
-        trace('AUTHENTICATE_RESOLVED');
-      } catch(error) { trace('AUTHENTICATE_REJECTED'); throw error; }
+        
+      } catch(error) {  throw error; }
       finally { clearTimeout(waitingNotice); }
       accessToken = auth?.accessToken;
-      trace(accessToken ? 'AUTH_TOKEN_PRESENT' : 'AUTH_TOKEN_MISSING');
+      
       if (!accessToken) throw new Error('Pi authentication was not completed.');
       if (incompleteSeen && await reconcile(incompletePayment?.identifier, true) !== true) return;
       if (session.status === 'approved' || session.hasLinkedPayment) {
@@ -185,9 +173,9 @@
       const amount = Number(session.amountPi);
       if (!Number.isFinite(amount) || amount <= 0) throw new Error('Invalid payment amount.');
       show(T.checking);
-      trace('CREATE_PAYMENT_CALLED');
+      
       paymentInFlight = true;
-      await Pi.createPayment({amount, memo:'FileOrganizerCore ' + session.plan, metadata:{sessionToken:token}}, {
+      await Pi.createPayment({amount, memo:'FileOrganizerCore', metadata:{sessionToken:token}}, {
         onReadyForServerApproval: id => callback('pi-approve',{sessionToken:token,paymentId:id,accessToken},() => show(T.follow)),
         onReadyForServerCompletion: (id,txId) => callback('pi-complete',{sessionToken:token,paymentId:id,txId,accessToken},finish),
         onCancel: async id => {
@@ -205,7 +193,7 @@
           if (!incompleteSeen) waitForVerification();
         }
       });
-    } catch(error) { if (paymentInFlight) waitForVerification(); paymentInFlight = false; trace('PAYMENT_FLOW_FAILED'); showError(error); }
+    } catch(error) { if (paymentInFlight) waitForVerification(); paymentInFlight = false;  showError(error); }
     finally { busy = false; if (!terminal && !paymentInFlight) button.disabled = false; }
   });
   (async () => {
@@ -217,7 +205,7 @@
       renderSession(session);
       if (session.status === 'completed') { finish(session); return; }
       if (!['pending','approved'].includes(session.status)) { terminal = true; closePage(session.status === 'cancelled' ? 'cancelled' : 'closed'); return; }
-      trace('SESSION_READY');
+      
       if (session.hasLinkedPayment || session.status === 'approved') { waitForVerification(undefined, true); return; }
       show(T.ready); button.classList.remove('hidden');
     } catch(error) { showError(error); if (!terminal) { button.disabled = false; button.classList.remove('hidden'); } }

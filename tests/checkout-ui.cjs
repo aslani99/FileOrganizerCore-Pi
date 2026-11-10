@@ -2,7 +2,7 @@ const { chromium } = require(require.resolve('playwright', {paths:[process.cwd()
 const fs=require('fs'), path=require('path'), assert=require('node:assert/strict');
 const root=path.resolve(__dirname,'../web');
 (async()=>{
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,executablePath:process.env.CHROME_PATH||undefined});
 let runs=0;
 for(const lang of ['en','fa','ar','ur','tr','ru','zh-hans','zh-hant','id','vi','es','fr','de','hi','ja','ko','it','pt','az']){
  for(const theme of ['light','dark']){
@@ -13,8 +13,8 @@ for(const lang of ['en','fa','ar','ur','tr','ru','zh-hans','zh-hant','id','vi','
    if(u.hostname==='backend.invalid')return route.fulfill({json:{status:'pending',hasLinkedPayment:false,plan:'max',amountPi:'118.2557491'}});
    if(u.hostname==='sdk.minepi.com')return route.fulfill({body:'',contentType:'application/javascript'});
    if(u.pathname==='/config.js')return route.fulfill({body:'window.FOP_CONFIG={SUPABASE_URL:"https://backend.invalid",SUPABASE_ANON_KEY:"mock"}',contentType:'application/javascript'});
-   const file=path.join(root,path.basename(u.pathname));
-   return fs.existsSync(file)?route.fulfill({body:fs.readFileSync(file),contentType:file.endsWith('.js')?'application/javascript':'text/html'}):route.abort();
+   const file=path.join(root,u.pathname);
+   return fs.existsSync(file)?route.fulfill({body:fs.readFileSync(file),contentType:file.endsWith('.png')?'image/png':file.endsWith('.ico')?'image/x-icon':file.endsWith('.js')?'application/javascript':'text/html'}):route.abort();
   });
   await page.goto('https://checkout.invalid/checkout.html?token=mock&lang='+lang);
   await page.waitForFunction(()=>document.body.dataset.state==='ready');
@@ -30,13 +30,12 @@ for(const lang of ['en','fa','ar','ur','tr','ru','zh-hans','zh-hant','id','vi','
   await page.evaluate(()=>{document.body.dataset.state='ready';document.querySelector('#status').textContent=window.FOP_I18N.text.ready;});
   if(['en','fa'].includes(lang))await page.screenshot({path:path.resolve(__dirname,`../preview-${lang}-${theme}.png`),fullPage:true});
   await page.setViewportSize({width:320,height:740});
-  await page.locator('summary').click();
-  assert.ok(await page.locator('#payment-diagnostics').isVisible());
+  assert.equal(await page.locator('#payment-diagnostics').count(),0);
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   assert.deepEqual(errors,[]);
   await page.close();runs++;
  }
 }
-console.log('PASS '+runs+' language/theme cases; ready/state layouts, 320px overflow, diagnostics, no script errors.');
+console.log('PASS '+runs+' language/theme cases; ready/state layouts, 320px overflow, no diagnostics, no script errors.');
 await browser.close();
 })().catch(e=>{console.error(e);process.exit(1)});

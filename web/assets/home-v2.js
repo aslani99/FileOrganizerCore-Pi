@@ -2,16 +2,7 @@
   'use strict';
   const $ = id => document.getElementById(id), cfg = window.FOP_CONFIG || {}, policy = window.FOP_HOME_POLICY;
   const text = window.FOP_HOME_TEXT;
-  const diagnostics = [];
-  function trace(stage) {
-    // Call with fixed literals only; never record URLs, errors, SDK payloads or identity.
-    diagnostics.push(new Date().toISOString() + ' ' + stage);
-    if (diagnostics.length > 50) diagnostics.shift();
-    $('piDebugLog').textContent = diagnostics.join('\n');
-  }
-  window.addEventListener('error', () => trace('BROWSER_SCRIPT_ERROR'));
-  window.addEventListener('unhandledrejection', () => trace('ASYNC_ERROR'));
-  trace('HOME_READY');
+
   const readPref = k => { try { return localStorage.getItem(k); } catch { return null; } };
   const writePref = (k,v) => { try { localStorage.setItem(k,v); } catch { } };
   const locale = window.FOP_HOME_LOCALE;
@@ -128,19 +119,17 @@
     const generation=++plansGeneration;plansController?.abort();plansController=new AbortController();
     const controller=plansController;
     const timer=setTimeout(()=>controller.abort(),15000);
-    currentPlans=[];plansState='loading';renderPlans();trace('PLANS_REQUEST');
+    currentPlans=[];plansState='loading';renderPlans();
     try {
       const origin=new URL(cfg.SUPABASE_URL);if(origin.protocol!=='https:'||!cfg.SUPABASE_ANON_KEY)throw Error();
       const fields='plan_id,price_usd,pi_amount,pi_rate_updated_at,pi_rate_source,duration_days,organization_limit_bytes,is_active,display_order';
       const response=await fetch(origin.origin+'/rest/v1/plans?select='+fields+'&is_active=eq.true&order=display_order.asc',{headers:{apikey:cfg.SUPABASE_ANON_KEY,Authorization:'Bearer '+cfg.SUPABASE_ANON_KEY},signal:controller.signal,cache:'no-store'});
       if(!response.ok)throw Error();const data=await response.json();if(generation!==plansGeneration)return;
-      currentPlans=policy.validPlans(data);plansState=currentPlans.length?'ok':'noPlans';trace('PLANS_RESPONSE');
-    }catch{if(generation===plansGeneration){plansState='plansError';trace('PLANS_FAILED');}}
+      currentPlans=policy.validPlans(data);plansState=currentPlans.length?'ok':'noPlans';
+    }catch{if(generation===plansGeneration){plansState='plansError';}}
     finally{clearTimeout(timer);if(generation===plansGeneration)renderPlans();}
   }
   $('reloadPlans').onclick=loadPlans;
-  $('piDebugClear').onclick=()=>{diagnostics.length=0;$('piDebugLog').textContent='';$('piDebugState').textContent=T.diagnosticsCleared;};
-  $('piDebugCopy').onclick=async()=>{try{await navigator.clipboard.writeText($('piDebugLog').textContent);$('piDebugState').textContent=T.diagnosticsCopied;}catch{$('piDebugState').textContent=T.diagnosticsCopyFailed;}};
   // No token or image is persisted. Only the user can navigate to a validated checkout.
   function clearResult() { resultURL=null;$('scanResult').hidden=true;$('resultHost').textContent=''; }
   function stopCamera() {
@@ -150,7 +139,7 @@
     requestingCamera=false;$('stopCamera').hidden=false;$('stopCamera').textContent=T.cameraStart;$('stopCamera').disabled=false;
   }
   function openScanner(plan='',mode='payment') {
-    scannerMode=mode;if(mode==='auth')trace('PI_AUTH_SCANNER_OPENED');renderScannerMode();
+    scannerMode=mode;renderScannerMode();
     selectedPlan=plan;clearResult();$('paymentLink').value='';$('qrImage').value='';renderSelected();scanStatus('cameraHint');
     $('scanner').showModal();document.body.classList.add('modal-open');startCamera();
   }

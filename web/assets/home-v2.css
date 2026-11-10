@@ -3,7 +3,6 @@
 h1{white-space:pre-line}button,summary,a,p,h1,h2,h3{overflow-wrap:anywhere}.plan .estimate{direction:inherit}.app-preview{min-width:0}
 .section-head.split>.button{flex-shrink:0;white-space:nowrap}@media(max-width:700px){.section-head.split{flex-wrap:wrap}.section-head.split>div{flex:1;min-width:210px}}
 
-.diagnostic-panel{border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--surface)}.diagnostic-panel summary{font-weight:600}.diagnostic-panel .actions{margin-top:18px}#piDebugLog{white-space:pre-wrap;overflow-wrap:anywhere;max-height:240px;overflow:auto;text-align:left;background:var(--panel);padding:14px;border-radius:10px;font-size:12px;unicode-bidi:isolate}#piDebugState{font-size:13px;color:var(--muted)}
 
 /* Shared header sizing; no stacked overrides from earlier patches. */
 .language-control{position:relative;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
